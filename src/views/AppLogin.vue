@@ -1,24 +1,24 @@
 <template>
   <div class="login-container">
-    <h2>登录页面</h2>
-    <form @submit.prevent="login">
-      <div class="input-group">
-        <label for="username">用户名：</label>
-        <input type="text" id="username" v-model="username" required />
-      </div>
+    <div class="login-box">
+      <h2>用户登录</h2>
+      <el-form @submit.prevent="login" label-position="top">
+        <el-form-item label="用户名">
+          <el-input v-model="username" placeholder="请输入用户名" />
+        </el-form-item>
 
-      <div class="input-group">
-        <label for="password">密码：</label>
-        <input type="password" id="password" v-model="password" required />
-      </div>
+        <el-form-item label="密码">
+          <el-input v-model="password" type="password" placeholder="请输入密码" show-password />
+        </el-form-item>
 
-      <button type="submit">登录</button>
-    </form>
+        <el-button native-type="submit" type="primary" style="width: 100%">登录</el-button>
+      </el-form>
+    </div>
   </div>
 </template>
 
 <script>
-
+import { ElMessage } from 'element-plus';
 import axios from 'axios'; // 引入 axios
 
 export default {
@@ -38,15 +38,15 @@ const response = await axios.post('http://localhost:8082/login', {
         });
 
         if (response.data.code === 1) {
-          alert('登录成功');
-          localStorage.setItem('token', response.data.data.token); // 存储 token
-          this.$router.push('/home'); // 跳转首页（需确保已配置 Vue Router）
+         localStorage.setItem('token', response.data.data.token);
+  ElMessage.success('登录成功');
+  this.$router.push('/home');
         } else {
-          alert('登录失败: ' + response.data.msg);
+          ElMessage.error('登录失败: ' + response.data.msg);
         }
       } catch (error) {
         console.error('请求失败:', error);
-        alert('网络错误，请稍后再试');
+        ElMessage.warning('网络错误，请稍后再试');
       }
     }
   }
@@ -54,12 +54,67 @@ const response = await axios.post('http://localhost:8082/login', {
 </script>
 
 <style scoped>
+/* 统一输入框容器宽度为 100% */
+::v-deep .el-form-item__content {
+  width: 100%;
+}
+
+/* 确保 el-input 宽度占满父容器 */
+::v-deep .el-input {
+  width: 100%;
+}
+
+/* 统一输入框高度、圆角、字体等 */
+::v-deep .el-input__inner {
+  width: 100%;
+  height: 45px;
+  font-size: 1rem;
+  padding: 10px 15px;
+  border-radius: 6px;
+  border-color: #ccc;
+}
+
+/* 聚焦状态：统一蓝色边框和阴影效果 */
+::v-deep .el-input__inner:focus {
+  border-color: #409EFF !important; /* 强制使用 Element Plus 主色 */
+}
+
+::v-deep .el-input__inner {
+  height: 45px;
+  font-size: 1rem;
+  padding: 10px 15px;
+  border-radius: 6px;
+  border-color: #ccc;
+}
+
+::v-deep .el-form-item__content {
+  width: 100%;
+}
 .login-container {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #e0e0e0, #bcbcbc),
+              url('https://images.unsplash.com/photo-1500382017468-9049edb78540') no-repeat center center fixed;
+  background-size: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.login-box {
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  width: 100%;
   max-width: 400px;
-  margin: 100px auto;
-  padding: 2rem;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.login-box h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
 }
 </style>
