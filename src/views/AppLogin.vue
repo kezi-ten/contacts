@@ -20,7 +20,7 @@
 <script>
 import { ElMessage } from 'element-plus';
 import axios from 'axios'; // 引入 axios
-
+import CryptoJS from 'crypto-js'; // 引入 crypto-js
 export default {
   data() {
     return {
@@ -31,14 +31,14 @@ export default {
   methods: {
     async login() { // 改为异步方法
       try {
-      
+      const encryptedPassword = CryptoJS.SHA256(this.password).toString();
 const response = await axios.post('http://localhost:8082/login', {
           username: this.username,
-          password: this.password
+          password: encryptedPassword
         });
 
         if (response.data.code === 1) {
-         localStorage.setItem('token', response.data.data.token);
+         localStorage.setItem('username', response.data.data.username);
   ElMessage.success('登录成功');
   this.$router.push('/home');
         } else {
