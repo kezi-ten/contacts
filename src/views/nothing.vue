@@ -1,17 +1,5 @@
 <template>
-  <div class="home">
-    <!-- 页头功能选项 -->
-    <div class="header-options">
-  <div class="header-item">
-    <button @click="goToContacts">通讯录</button>
-  </div>
-  <div class="header-item">
-    <button @click="goToProfile">个人信息</button>
-  </div>
-  <div class="header-item">
-    <button @click="enterAdminMode">管理员模式</button>
-  </div>
-</div>
+
 
     <!-- 按部门分组展示 -->
     <div v-for="(dept, index) in departments" :key="index" class="department">
@@ -22,22 +10,15 @@
       <transition name="slide">
         <div v-show="dept.isOpen" class="employee-list">
           <ul>
-            <li v-for="emp in dept.employees" :key="emp.id">
-  <div class="employee-info">
-    <div class="name">{{ emp.name }}</div>
-    <div class="position">{{ emp.position }}</div>
-  </div>
-  <button @click="viewEmployee(emp)">查看</button>
-</li>
+            <li v-for="emp in dept.employees" :key="emp.id">{{ emp.name }}</li>
           </ul>
         </div>
       </transition>
     </div>
-  </div>
+  
 </template>
 
 <script>
-
 import axios from 'axios';
 
 export default {
@@ -54,7 +35,6 @@ export default {
     this.fetchEmployees();
   },
   methods: {
- 
     async fetchEmployees() {
       try {
       const response = await axios.post('http://localhost:8082/employees');
@@ -81,8 +61,6 @@ export default {
       id: emp.username,
       name: emp.name,
       department: emp.department_id|| '未知部门',
-      position: emp.position|| '未知职位',
-
     }));
 
     this.allEmployees = processedData;
@@ -113,81 +91,25 @@ export default {
       if (dept) {
         dept.isOpen = !dept.isOpen;
       }
-    },
-    goToContacts() {
-    // 跳转到通讯录页面
-    console.log("跳转到通讯录");
-  },
-  goToProfile() {
-    // 跳转到个人信息页面
-    console.log("跳转到个人信息");
-  },
-  enterAdminMode() {
-    // 进入管理员模式
-    console.log("进入管理员模式");
-  },
-  viewEmployee(employee) {
-    // 查看员工详情
-    console.log("查看员工:", employee);
-  },
+    }
   }
 };
 </script>
 
 <style scoped>
-.header-options {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-  background-color: #757575; /* 保持原有背景色 */
-  padding: 0.5rem 0.5rem; /* 减少横向留白 */
-  border-radius: 6px;
-  overflow: hidden; /* 确保子元素圆角不溢出 */
-}
-
-
-.header-options button {
-  background-color: #757575; /* 灰色按钮 */
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.header-options button:hover {
-  background-color: #fff; /* 深灰色悬停效果 */
-}
-
-.employee-list button {
-  background-color: #757575; /* 灰色按钮 */
-  color: white;
-  border: none;
-  padding: 0.3rem 0.6rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8rem;
-}
-
-.employee-list button:hover {
-  background-color: #ccc; /* 深灰色悬停效果 */
-}
 .home {
   padding: 2rem;
-  background-color: #f5f5f5; /* 灰色背景 */
 }
 
 .department {
   margin-bottom: 1rem;
-  border: 1px solid #ccc;
+  border: 1px solid #ddd;
   border-radius: 6px;
   overflow: hidden;
-  background-color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .dept-header {
-  background-color: #e0e0e0; /* 浅灰色背景 */
+  background-color: #f5f7fa;
   padding: 1rem;
   cursor: pointer;
   font-weight: bold;
@@ -205,9 +127,6 @@ export default {
 .employee-list li {
   padding: 0.5rem;
   border-bottom: 1px solid #eee;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .employee-list li:last-child {
@@ -223,49 +142,5 @@ export default {
 .slide-leave-to {
   max-height: 0;
   overflow: hidden;
-}
-.header-item {
-  flex: 1;
-  margin: 0 0.25rem; /* 按钮之间留点空隙 */
-}
-
-.header-item button {
-width: 100%;
-  height: 100%;
-  background-color: #757575;
-  color: white;
-  border: none;
-  padding: 1rem 0;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.3s ease; /* 新增：所有属性平滑过渡 */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* 新增：轻柔阴影 */
-}
-
-.header-item button:hover {
-  background-color: #474646;
-}
-.employee-list li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem;
-  border-bottom: 1px solid #eee;
-}
-
-.employee-info {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.name {
-  font-weight: bold;
-}
-
-.position {
-  color: #666;
-  font-size: 0.9em;
 }
 </style>

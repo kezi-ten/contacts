@@ -4,7 +4,7 @@
       <h2>用户登录</h2>
       <el-form @submit.prevent="login" label-position="top">
         <el-form-item label="用户名">
-          <el-input v-model="username" placeholder="请输入用户名" />
+          <el-input v-model="emp_id" placeholder="请输入用户名" />
         </el-form-item>
 
         <el-form-item label="密码">
@@ -24,7 +24,7 @@ import CryptoJS from 'crypto-js'; // 引入 crypto-js
 export default {
   data() {
     return {
-      username: '',
+      emp_id: '',
       password: ''
     };
   },
@@ -33,7 +33,7 @@ export default {
       try {
       const encryptedPassword = CryptoJS.SHA256(this.password).toString();
 const response = await axios.post('http://localhost:8082/login', {
-          username: this.username,
+          emp_id: this.emp_id,
           password: encryptedPassword
         });
 
