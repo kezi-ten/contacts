@@ -12,8 +12,10 @@
     <button @click="enterAdminMode">管理员模式</button>
   </div>
 </div>
-
-    <!-- 按部门分组展示 -->
+  </div>
+    <transition name="fade">
+  <div v-if="currentView === 'contacts'" key="contacts">
+    <!-- 原来的部门展示区域 -->
     <div v-for="(dept, index) in departments" :key="index" class="department">
       <div class="dept-header" @click="toggle(dept.name)">
         {{ dept.name }} (共 {{ dept.employees.length }} 人)
@@ -23,17 +25,61 @@
         <div v-show="dept.isOpen" class="employee-list">
           <ul>
             <li v-for="emp in dept.employees" :key="emp.id">
-  <div class="employee-info">
-    <div class="name">{{ emp.name }}</div>
-    <div class="position">{{ emp.position }}</div>
-  </div>
-  <button @click="viewEmployee(emp)">查看</button>
-</li>
+              <div class="employee-info">
+                <div class="name">{{ emp.name }}</div>
+                <div class="position">{{ emp.position }}</div>
+              </div>
+              <button @click="viewEmployee(emp)">查看</button>
+            </li>
           </ul>
         </div>
       </transition>
     </div>
   </div>
+<div v-else-if="currentView === 'profile'" class="profile-fullscreen profile-no-card">
+
+  <div class="profile-info-group">
+    <div class="info-row">
+      <span class="label">工号：</span>
+      <span class="value">{{ currentUser?.emp_id }}</span>
+    </div>
+    <div class="info-row">
+      <span class="label">姓名：</span>
+      <span class="value">{{ currentUser?.name }}</span>
+    </div>
+    <div class="info-row">
+      <span class="label">部门：</span>
+      <span class="value">{{ currentUser?.department }}</span>
+    </div>
+    <div class="info-row">
+      <span class="label">职位：</span>
+      <span class="value">{{ currentUser?.position }}</span>
+    </div>
+    <div class="info-row">
+      <span class="label">邮箱：</span>
+      <span class="value">{{ currentUser?.email || '未填写' }}</span>
+    </div>
+    <div class="info-row">
+      <span class="label">电话：</span>
+      <span class="value">{{ currentUser?.phone || '未填写' }}</span>
+    </div>
+  </div>
+
+  <div class="profile-actions">
+    <el-button type="primary" @click="editProfile" style="width: 200px; height: 50px; font-size: 1.2rem;">
+  编辑资料
+</el-button>
+  </div>
+</div>
+
+
+
+  <div v-else-if="currentView === 'admin'" key="admin" class="admin-card">
+    <h3>管理员模式</h3>
+    <p>当前为管理员视角，可管理用户和权限。</p>
+    <!-- 后续可拓展管理员功能 -->
+  </div>
+</transition>
 </template>
 
 <script>
@@ -44,14 +90,18 @@ export default {
   name: 'HomeView',
   data() {
     return {
-      username: '',
+      emp_id: '',
       departments: [],
-      allEmployees: [] // 存储所有员工数据
+      currentUser: null, // 用于保存当前登录用户的信息
+      allEmployees: [] ,// 存储所有员工数据
+       currentView: 'contacts' // 默认显示通讯录
     };
   },
   mounted() {
-    this.username = localStorage.getItem('username') || '游客';
-    this.fetchEmployees();
+    this.emp_id = localStorage.getItem('emp_id') || '游客';
+    this.fetchEmployees().then(() => {
+    this.getCurrentUser();
+  });
   },
   methods: {
  
@@ -78,10 +128,12 @@ export default {
     }
 
     const processedData = employees.map(emp => ({
-      id: emp.username,
+      emp_id: emp.emp_id,
       name: emp.name,
       department: emp.department_id|| '未知部门',
       position: emp.position|| '未知职位',
+      email: emp.email || '未填写',  
+  phone: emp.phone || '未填写'    
 
     }));
 
@@ -114,17 +166,28 @@ export default {
         dept.isOpen = !dept.isOpen;
       }
     },
+     getCurrentUser() {
+    // 从 allEmployees 中找到当前用户
+    const user = this.allEmployees.find(emp => emp.emp_id === this.emp_id);
+
+    if (user) {
+      this.currentUser = user;
+    } else {
+      console.warn('未找到当前用户信息');
+      this.currentUser = null;
+    }
+  },
     goToContacts() {
     // 跳转到通讯录页面
-    console.log("跳转到通讯录");
+    this.currentView = 'contacts';
   },
   goToProfile() {
     // 跳转到个人信息页面
-    console.log("跳转到个人信息");
+    this.currentView = 'profile';
   },
   enterAdminMode() {
     // 进入管理员模式
-    console.log("进入管理员模式");
+    this.currentView = 'admin';
   },
   viewEmployee(employee) {
     // 查看员工详情
@@ -144,7 +207,6 @@ export default {
   border-radius: 6px;
   overflow: hidden; /* 确保子元素圆角不溢出 */
 }
-
 
 .header-options button {
   background-color: #757575; /* 灰色按钮 */
@@ -172,6 +234,7 @@ export default {
 .employee-list button:hover {
   background-color: #ccc; /* 深灰色悬停效果 */
 }
+
 .home {
   padding: 2rem;
   background-color: #f5f5f5; /* 灰色背景 */
@@ -224,13 +287,14 @@ export default {
   max-height: 0;
   overflow: hidden;
 }
+
 .header-item {
   flex: 1;
   margin: 0 0.25rem; /* 按钮之间留点空隙 */
 }
 
 .header-item button {
-width: 100%;
+  width: 100%;
   height: 100%;
   background-color: #757575;
   color: white;
@@ -246,6 +310,7 @@ width: 100%;
 .header-item button:hover {
   background-color: #474646;
 }
+
 .employee-list li {
   display: flex;
   justify-content: space-between;
@@ -267,5 +332,95 @@ width: 100%;
 .position {
   color: #666;
   font-size: 0.9em;
+}
+
+.profile-card,
+.admin-card {
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 1rem;
+}
+
+.profile-card h3,
+.admin-card h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.label-style {
+  width: 100px;
+  font-weight: bold;
+  background-color: #f5f7fa;
+}
+
+.profile-card {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem 0;
+}
+
+/* 个人信息展示*/
+.profile-fullscreen {
+  width: 100%;
+  min-height: 50vh;
+  background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  box-sizing: border-box;
+  background-image: url('https://images.unsplash.com/photo-1500964755822-32f2bec2a0bd');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+
+.profile-no-card {
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.profile-info-group {
+  max-width: 800px;
+  margin: 0.5rem auto 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 每行两个 */
+  gap: 2rem;
+  text-align: left;
+}
+
+.info-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #eee;
+  background-color: #f9f9f9; /* 可选：增加背景色提升可读性 */
+  border-radius: 8px; /* 可选：圆角美化 */
+}
+
+.label {
+  font-weight: bold;
+  color: #333;
+  min-width: 100px;
+  font-size: 2rem; /* 字号调大 */
+}
+
+.value {
+  color: #555;
+  flex: 1;
+  padding-left: 1rem;
+  font-size: 1.4rem; /* 字号调大 */
+}
+
+.profile-actions {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+  margin-top: 1rem;
 }
 </style>

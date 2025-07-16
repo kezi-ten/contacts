@@ -38,7 +38,8 @@ const response = await axios.post('http://localhost:8082/login', {
         });
 
         if (response.data.code === 1) {
-         localStorage.setItem('username', response.data.data.username);
+         localStorage.setItem('emp_id', response.data.data.emp_id);
+         console.log(localStorage.getItem('emp_id'));
   ElMessage.success('登录成功');
   this.$router.push('/home');
         } else {
