@@ -33,52 +33,11 @@
                       <div class="position">{{ emp.position }}</div>
                     </div>
                     <button @click="viewEmployee(emp)">查看</button>
-
                   </li>
                 </ul>
               </div>
             </transition>
           </div>
-          <!-- 员工信息弹窗 -->
-<div v-if="selectedEmployee" class="employee-detail-modal">
-  <div class="modal-content">
-    <h3>员工详情</h3>
-    
-    <div class="employee-detail-row">
-      <span class="detail-label">姓名：</span>
-      <span class="detail-value">{{ selectedEmployee.name }}</span>
-    </div>
-    
-    <div class="employee-detail-row">
-      <span class="detail-label">工号：</span>
-      <span class="detail-value">{{ selectedEmployee.emp_id }}</span>
-    </div>
-    
-    <div class="employee-detail-row">
-      <span class="detail-label">部门：</span>
-      <span class="detail-value">{{ selectedEmployee.department }}</span>
-    </div>
-    
-    <div class="employee-detail-row">
-      <span class="detail-label">职位：</span>
-      <span class="detail-value">{{ selectedEmployee.position }}</span>
-    </div>
-    
-    <div class="employee-detail-row">
-      <span class="detail-label">邮箱：</span>
-      <span class="detail-value">{{ selectedEmployee.email || '未填写' }}</span>
-    </div>
-    
-    <div class="employee-detail-row">
-      <span class="detail-label">电话：</span>
-      <span class="detail-value">{{ selectedEmployee.phone || '未填写' }}</span>
-    </div>
-    
-    <div class="modal-actions">
-      <button @click="closeEmployeeDetail" class="close-btn">关闭</button>
-    </div>
-  </div>
-</div>
         </div>
 
         <div v-show="currentView === 'profile'" class="view profile-view profile-fullscreen profile-no-card">
@@ -160,8 +119,7 @@ export default {
       currentUser: null, // 用于保存当前登录用户的信息
       allEmployees: [] ,// 存储所有员工数据
        currentView: 'contacts' ,// 默认显示通讯录
-       showEditModal: false ,// 控制模态框显示
-       selectedEmployee: null // 新增：用于存储选中的员工信息
+       showEditModal: false // 控制模态框显示
     };
   },
   mounted() {
@@ -259,11 +217,7 @@ export default {
   viewEmployee(employee) {
     // 查看员工详情
     console.log("查看员工:", employee);
-    this.selectedEmployee = employee;
   },
-  closeEmployeeDetail() {
-  this.selectedEmployee = null;
-},
 
   
   openEditModal() {
@@ -318,7 +272,7 @@ export default {
 }
 
 .header-options button {
-  background-color: #1976D2; /* 灰色按钮 */
+  background-color: #757575; /* 灰色按钮 */
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -331,7 +285,7 @@ export default {
 }
 
 .employee-list button {
-  background-color: #2196F3; /* 灰色按钮 */
+  background-color: #757575; /* 灰色按钮 */
   color: white;
   border: none;
   padding: 0.3rem 0.6rem;
@@ -623,78 +577,5 @@ export default {
 
 .cancel-btn {
   background-color: #ccc;
-}
-/* 员工信息弹窗 */
-.employee-detail-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.employee-detail-modal .modal-content {
-  background-color: #fff;
-  padding: 2rem;
-  border-radius: 8px;
-  width: 400px;
-  max-width: 90%;
-  animation: fadeIn 0.3s ease;
-}
-
-.employee-detail-row {
-  display: flex;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #eee;
-}
-
-.detail-label {
-  font-weight: bold;
-  color: #333;
-  min-width: 80px;
-}
-
-.detail-value {
-  color: #555;
-  flex: 1;
-  padding-left: 1rem;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 1.5rem;
-}
-
-.close-btn {
-  background-color: #2196F3;
-  color: white;
-  border: none;
-  padding: 0.5rem 1.2rem;
-  font-size: 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.close-btn:hover {
-  background-color: #1976D2;
-  transform: translateY(-2px);
-}
-
-.close-btn::before {
-  content: "\1F5D9"; /* 叉图标 */
-  margin-right: 0.5rem;
-  font-size: 1.2rem;
 }
 </style>
