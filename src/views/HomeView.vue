@@ -2,84 +2,108 @@
   <div class="home">
     <!-- 页头功能选项 -->
     <div class="header-options">
-  <div class="header-item">
-    <button @click="goToContacts">通讯录</button>
-  </div>
-  <div class="header-item">
-    <button @click="goToProfile">个人信息</button>
-  </div>
-  <div class="header-item">
-    <button @click="enterAdminMode">管理员模式</button>
-  </div>
-</div>
-  </div>
-    <transition name="fade">
-  <div v-if="currentView === 'contacts'" key="contacts">
-    <!-- 原来的部门展示区域 -->
-    <div v-for="(dept, index) in departments" :key="index" class="department">
-      <div class="dept-header" @click="toggle(dept.name)">
-        {{ dept.name }} (共 {{ dept.employees.length }} 人)
-        <span>{{ dept.isOpen ? '▼' : '▶' }}</span>
+      <div class="header-item">
+        <button @click="goToContacts">通讯录</button>
       </div>
-      <transition name="slide">
-        <div v-show="dept.isOpen" class="employee-list">
-          <ul>
-            <li v-for="emp in dept.employees" :key="emp.id">
-              <div class="employee-info">
-                <div class="name">{{ emp.name }}</div>
-                <div class="position">{{ emp.position }}</div>
+      <div class="header-item">
+        <button @click="goToProfile">个人信息</button>
+      </div>
+      <div class="header-item">
+        <button @click="enterAdminMode">管理员模式</button>
+      </div>
+    </div>
+
+    <!-- 页面内容过渡动画 -->
+    <transition name="fade">
+      <div>
+        <!-- 使用 v-show 控制当前显示的视图 -->
+        <div v-show="currentView === 'contacts'" class="view contacts-view">
+          <!-- 通讯录视图 -->
+          <div v-for="(dept, index) in departments" :key="index" class="department">
+            <div class="dept-header" @click="toggle(dept.name)">
+              {{ dept.name }} (共 {{ dept.employees.length }} 人)
+              <span>{{ dept.isOpen ? '▼' : '▶' }}</span>
+            </div>
+            <transition name="slide">
+              <div v-show="dept.isOpen" class="employee-list">
+                <ul>
+                  <li v-for="emp in dept.employees" :key="emp.id">
+                    <div class="employee-info">
+                      <div class="name">{{ emp.name }}</div>
+                      <div class="position">{{ emp.position }}</div>
+                    </div>
+                    <button @click="viewEmployee(emp)">查看</button>
+                  </li>
+                </ul>
               </div>
-              <button @click="viewEmployee(emp)">查看</button>
-            </li>
-          </ul>
+            </transition>
+          </div>
         </div>
-      </transition>
-    </div>
-  </div>
-<div v-else-if="currentView === 'profile'" class="profile-fullscreen profile-no-card">
 
-  <div class="profile-info-group">
-    <div class="info-row">
-      <span class="label">工号：</span>
-      <span class="value">{{ currentUser?.emp_id }}</span>
-    </div>
-    <div class="info-row">
-      <span class="label">姓名：</span>
-      <span class="value">{{ currentUser?.name }}</span>
-    </div>
-    <div class="info-row">
-      <span class="label">部门：</span>
-      <span class="value">{{ currentUser?.department }}</span>
-    </div>
-    <div class="info-row">
-      <span class="label">职位：</span>
-      <span class="value">{{ currentUser?.position }}</span>
-    </div>
-    <div class="info-row">
-      <span class="label">邮箱：</span>
-      <span class="value">{{ currentUser?.email || '未填写' }}</span>
-    </div>
-    <div class="info-row">
-      <span class="label">电话：</span>
-      <span class="value">{{ currentUser?.phone || '未填写' }}</span>
-    </div>
-  </div>
-
-  <div class="profile-actions">
-    <el-button type="primary" @click="editProfile" style="width: 200px; height: 50px; font-size: 1.2rem;">
-  编辑资料
-</el-button>
-  </div>
+        <div v-show="currentView === 'profile'" class="view profile-view profile-fullscreen profile-no-card">
+          <!-- 个人信息视图 -->
+          <div class="profile-info-group">
+            <div class="info-row">
+              <span class="label">工号：</span>
+              <span class="value">{{ currentUser?.emp_id }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">姓名：</span>
+              <span class="value">{{ currentUser?.name }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">部门：</span>
+              <span class="value">{{ currentUser?.department }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">职位：</span>
+              <span class="value">{{ currentUser?.position }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">邮箱：</span>
+              <span class="value">{{ currentUser?.email || '未填写' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">电话：</span>
+              <span class="value">{{ currentUser?.phone || '未填写' }}</span>
+            </div>
+          </div>
+<!-- 编辑按钮 -->
+<div class="profile-actions">
+  <button @click="openEditModal" class="edit-profile-btn">编辑资料</button>
+</div>
 </div>
 
-
-
-  <div v-else-if="currentView === 'admin'" key="admin" class="admin-card">
-    <h3>管理员模式</h3>
-    <p>当前为管理员视角，可管理用户和权限。</p>
-    <!-- 后续可拓展管理员功能 -->
+<!-- 添加模态框 -->
+<div v-if="showEditModal" class="modal">
+  <div class="modal-content">
+    <h3>编辑个人信息</h3>
+    <div class="edit-field">
+      <label>电话：</label>
+      <input v-model="currentUser.phone" type="text" placeholder="请输入电话号码">
+    </div>
+    <div class="edit-field">
+      <label>邮箱：</label>
+      <input v-model="currentUser.email" type="text" placeholder="请输入邮箱地址">
+    </div>
+    <div class="modal-actions">
+      <button @click="updateUserInfo" class="save-btn">保存</button>
+      <button @click="closeEditModal" class="cancel-btn">取消</button>
+    </div>
   </div>
-</transition>
+         
+        </div>
+
+        <div v-show="currentView === 'admin'" class="view admin-view admin-card">
+          <!-- 管理员视图 -->
+          <h3>管理员模式</h3>
+          <p>当前为管理员视角，可管理用户和权限。</p>
+          <!-- 后续可拓展管理员功能 -->
+        </div>
+      </div>
+    </transition>
+
+  </div>
 </template>
 
 <script>
@@ -94,7 +118,8 @@ export default {
       departments: [],
       currentUser: null, // 用于保存当前登录用户的信息
       allEmployees: [] ,// 存储所有员工数据
-       currentView: 'contacts' // 默认显示通讯录
+       currentView: 'contacts' ,// 默认显示通讯录
+       showEditModal: false // 控制模态框显示
     };
   },
   mounted() {
@@ -104,6 +129,9 @@ export default {
   });
   },
   methods: {
+    testClick() {
+  console.log('测试按钮点击');
+},
  
     async fetchEmployees() {
       try {
@@ -193,7 +221,46 @@ export default {
     // 查看员工详情
     console.log("查看员工:", employee);
   },
+
+  // ...其他方法保持不变
+  
+  openEditModal() {
+    console.log("打开编辑模态框");
+    this.showEditModal = true;
+  },
+  
+  closeEditModal() {
+    this.showEditModal = false;
+  },
+  
+  async updateUserInfo() {
+    try {
+      // 调用后端更新接口
+      const response = await axios.post('http://localhost:8082/update', {
+        emp_id: this.currentUser.emp_id,
+        phone: this.currentUser.phone,
+        email: this.currentUser.email
+      });
+      
+      if (response.data.code === 1) {
+        // 更新成功
+        alert('信息更新成功');
+        this.closeEditModal();
+        
+        // 可选：重新获取用户信息以确保数据最新
+        this.getCurrentUser();
+      } else {
+        alert('信息更新失败');
+      }
+    } catch (error) {
+      console.error('更新用户信息失败:', error);
+      alert('信息更新失败');
+    }
   }
+}
+
+
+  
 };
 </script>
 
@@ -417,10 +484,102 @@ export default {
   font-size: 1.4rem; /* 字号调大 */
 }
 
+
+/* 编辑按钮容器 */
 .profile-actions {
   max-width: 800px;
   margin: 0 auto;
   text-align: center;
   margin-top: 1rem;
+}
+
+/* 编辑按钮 */
+.edit-profile-btn {
+  background-color: #2196F3; /* 蓝色背景 */
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+}
+
+/* 悬停效果 */
+.edit-profile-btn:hover {
+  background-color: #1976D2; /* 深蓝色 */
+  transform: translateY(-2px);
+}
+
+/* 按钮图标 */
+.edit-profile-btn::before {
+  content: "\1F589"; /* 笔形图标 */
+  margin-right: 0.5rem;
+  font-size: 1.2rem;
+}
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+}
+
+.edit-field {
+  margin-bottom: 1.5rem;
+}
+
+.edit-field label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.edit-field input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+}
+
+.modal-actions button {
+  padding: 0.5rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+
+.save-btn {
+  background-color: #2196F3;
+  color: white;
+}
+
+.cancel-btn {
+  background-color: #ccc;
 }
 </style>
