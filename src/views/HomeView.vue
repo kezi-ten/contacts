@@ -150,7 +150,7 @@
 <script>
 
 import axios from 'axios';
-
+import { ElMessage } from 'element-plus';
 export default {
   name: 'HomeView',
   data() {
@@ -173,8 +173,14 @@ export default {
   methods: {
  
     async fetchEmployees() {
+      const token = sessionStorage.getItem('token');
       try {
-      const response = await axios.post('http://localhost:8082/employees');
+    
+      const response = await axios.post('http://localhost:8082/employees', {}, {
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+});
     console.log('Response Data:', response.data); // 打印响应内容
     console.log('Data Type:', typeof response.data); // 查看类型
 
@@ -276,27 +282,32 @@ export default {
   },
   
   async updateUserInfo() {
+    const token = sessionStorage.getItem('token');
     try {
+       
       // 调用后端更新接口
       const response = await axios.post('http://localhost:8082/update', {
         emp_id: this.currentUser.emp_id,
         phone: this.currentUser.phone,
         email: this.currentUser.email
-      });
+      },
+     {
+  headers: {
+    Authorization: `Bearer ${token}`}},);
       
       if (response.data.code === 1) {
         // 更新成功
-        alert('信息更新成功');
+         ElMessage.success('更新成功');
         this.closeEditModal();
         
         // 可选：重新获取用户信息以确保数据最新
         this.getCurrentUser();
       } else {
-        alert('信息更新失败');
+        ElMessage.success('更新失败');
       }
     } catch (error) {
       console.error('更新用户信息失败:', error);
-      alert('信息更新失败');
+      ElMessage.success('更新信息失败');
     }
   }
 }

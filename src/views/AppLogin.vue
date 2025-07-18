@@ -39,6 +39,7 @@ const response = await axios.post('http://localhost:8082/login', {
 
         if (response.data.code === 1) {
          localStorage.setItem('emp_id', response.data.data.emp_id);
+            sessionStorage.setItem('token', response.data.data.token);
          console.log(localStorage.getItem('emp_id'));
   ElMessage.success('登录成功');
   this.$router.push('/home');
