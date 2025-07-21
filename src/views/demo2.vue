@@ -10,10 +10,7 @@
         <el-form-item label="密码">
           <el-input v-model="password" type="password" placeholder="请输入密码" show-password />
         </el-form-item>
-<el-form-item label="验证码">
-    <el-input v-model="captcha" placeholder="请输入验证码" />
-    <img :src="captchaImage" alt="验证码" @click="getCaptcha" style="margin-top: 10px; cursor: pointer;">
-  </el-form-item>
+
         <el-button native-type="submit" type="primary" style="width: 100%">登录</el-button>
       </el-form>
     </div>
@@ -28,40 +25,17 @@ export default {
   data() {
     return {
       emp_id: '',
-      password: '',
-      captcha: '',
-     // captchaImage: '',
-     // captchaId: ''
+      password: ''
     };
   },
-  /* mounted() {
-    this.getCaptcha();
-  }, */
   methods: {
-   /* async getCaptcha() {
-      try {
-        const response = await axios.get('http://localhost:8082/captcha');
-        this.captchaId = response.data.captchaId;
-        this.captchaImage = response.data.image || `data:image/svg+xml;utf8,${response.data.svg}`;
-      } catch (error) {
-        console.error('获取验证码失败:', error);
-        ElMessage.warning('获取验证码失败，请稍后再试');
-      }
-    },*/
     async login() { // 改为异步方法
       try {
       const encryptedPassword = CryptoJS.SHA256(this.password).toString();
 const response = await axios.post('http://localhost:8082/login', {
           emp_id: this.emp_id,
-          password: encryptedPassword}/*, {
-  headers: {
-    'X-Captcha-Key': this.captchaId,
-    'X-Captcha': this.captcha,
-  
-  }
-        }
-  */
- );
+          password: encryptedPassword
+        });
 
         if (response.data.code === 1) {
          localStorage.setItem('emp_id', response.data.data.emp_id);
@@ -71,7 +45,6 @@ const response = await axios.post('http://localhost:8082/login', {
   this.$router.push('/home');
         } else {
           ElMessage.error('登录失败: ' + response.data.msg);
-           this.getCaptcha();
         }
       } catch (error) {
         console.error('请求失败:', error);
