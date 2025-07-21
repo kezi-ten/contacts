@@ -18,26 +18,75 @@
       <div>
         <!-- 使用 v-show 控制当前显示的视图 -->
         <div v-show="currentView === 'contacts'" class="view contacts-view">
+           <!-- 搜索栏 -->
+           <div class="search-bar">
+      <el-input
+        v-model="searchKeyword"
+        placeholder="请输入员工工号或姓名搜索"
+        @input="filterEmployees"
+      />
+    </div>
           <!-- 通讯录视图 -->
-          <div v-for="(dept, index) in departments" :key="index" class="department">
-            <div class="dept-header" @click="toggle(dept.name)">
-              {{ dept.name }} (共 {{ dept.employees.length }} 人)
-              <span>{{ dept.isOpen ? '▼' : '▶' }}</span>
-            </div>
-            <transition name="slide">
-              <div v-show="dept.isOpen" class="employee-list">
-                <ul>
-                  <li v-for="emp in dept.employees" :key="emp.id">
-                    <div class="employee-info">
-                      <div class="name">{{ emp.name }}</div>
-                      <div class="position">{{ emp.position }}</div>
-                    </div>
-                    <button @click="viewEmployee(emp)">查看</button>
-                  </li>
-                </ul>
+          <div v-for="(dept) in filteredDepartments" :key="dept.name" class="department">
+      <div class="dept-header" @click="toggle(dept.name)">
+        {{ dept.name }} (共 {{ dept.employees.length }} 人)
+        <span>{{ dept.isOpen ? '▼' : '▶' }}</span>
+      </div>
+      <transition name="slide">
+        <div v-show="dept.isOpen" class="employee-list">
+          <ul>
+            <!-- 使用员工工号作为 key -->
+            <li v-for="emp in dept.employees" :key="emp.emp_id">
+              <div class="employee-info">
+                <div class="name">{{ emp.name }}</div>
+                <div class="position">{{ emp.position }}</div>
               </div>
+              <button @click="viewEmployee(emp)">查看</button>
+            </li>
+          </ul>
+        </div>
             </transition>
           </div>
+          <!-- 员工信息弹窗 -->
+<div v-if="selectedEmployee" class="employee-detail-modal">
+  <div class="modal-content">
+    <h3>员工详情</h3>
+    
+    <div class="employee-detail-row">
+      <span class="detail-label">姓名：</span>
+      <span class="detail-value">{{ selectedEmployee.name }}</span>
+    </div>
+    
+    <div class="employee-detail-row">
+      <span class="detail-label">工号：</span>
+      <span class="detail-value">{{ selectedEmployee.emp_id }}</span>
+    </div>
+    
+    <div class="employee-detail-row">
+      <span class="detail-label">部门：</span>
+      <span class="detail-value">{{ selectedEmployee.department }}</span>
+    </div>
+    
+    <div class="employee-detail-row">
+      <span class="detail-label">职位：</span>
+      <span class="detail-value">{{ selectedEmployee.position }}</span>
+    </div>
+    
+    <div class="employee-detail-row">
+      <span class="detail-label">邮箱：</span>
+      <span class="detail-value">{{ selectedEmployee.email || '未填写' }}</span>
+    </div>
+    
+    <div class="employee-detail-row">
+      <span class="detail-label">电话：</span>
+      <span class="detail-value">{{ selectedEmployee.phone || '未填写' }}</span>
+    </div>
+    
+    <div class="modal-actions">
+      <button @click="closeEmployeeDetail" class="close-btn">关闭</button>
+    </div>
+  </div>
+</div>
         </div>
 
         <div v-show="currentView === 'profile'" class="view profile-view profile-fullscreen profile-no-card">
@@ -109,7 +158,7 @@
 <script>
 
 import axios from 'axios';
-
+import { ElMessage } from 'element-plus';
 export default {
   name: 'HomeView',
   data() {
@@ -119,20 +168,31 @@ export default {
       currentUser: null, // 用于保存当前登录用户的信息
       allEmployees: [] ,// 存储所有员工数据
        currentView: 'contacts' ,// 默认显示通讯录
-       showEditModal: false // 控制模态框显示
+       showEditModal: false ,// 控制模态框显示
+       selectedEmployee: null, // 新增：用于存储选中的员工信息
+       searchKeyword: '', // 搜索关键词
+        filteredDepartments: [] // 过滤后的部门数据
+       
     };
   },
   mounted() {
     this.emp_id = localStorage.getItem('emp_id') || '游客';
     this.fetchEmployees().then(() => {
     this.getCurrentUser();
+    this.filteredDepartments = this.departments; // 初始化过滤数据
   });
   },
   methods: {
  
     async fetchEmployees() {
+      const token = sessionStorage.getItem('token');
       try {
-      const response = await axios.post('http://localhost:8082/employees');
+    
+      const response = await axios.post('http://localhost:8082/employees', {}, {
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+});
     console.log('Response Data:', response.data); // 打印响应内容
     console.log('Data Type:', typeof response.data); // 查看类型
 
@@ -166,6 +226,9 @@ export default {
     this.groupByDepartment(processedData);
   } catch (error) {
     console.error('请求员工数据失败:', error);
+    ElMessage.error('您的登录已过期，请重新登录。');
+    this.$router.push('/login');
+
   }
     },
 
@@ -183,12 +246,30 @@ export default {
         employees: map[deptName],
         isOpen: false
       }));
+       this.filteredDepartments = this.departments; // 初始化过滤数据
     },
-
-    toggle(deptName) {
-      const dept = this.departments.find(d => d.name === deptName);
-      if (dept) {
-        dept.isOpen = !dept.isOpen;
+ // 过滤员工数据
+      filterEmployees() {
+      const keyword = this.searchKeyword.toLowerCase();
+      console.log('当前搜索关键词:', keyword);
+      if (!keyword) {
+        this.filteredDepartments = [...this.departments]; 
+        console.log('关键词为空，显示全部数据');
+      } else {
+        const newFilteredDepartments = this.departments.map(dept => {
+          const filteredEmployees = dept.employees.filter(emp => {
+            const match = emp.emp_id.toLowerCase().includes(keyword) || emp.name.toLowerCase().includes(keyword);
+            console.log(`员工 ${emp.name} (工号: ${emp.emp_id}) 是否匹配: ${match}`);
+            return match;
+          });
+          return {
+            ...dept,
+            employees: filteredEmployees
+          };
+        }).filter(dept => dept.employees.length > 0);
+        // 使用解构赋值确保响应式更新
+        this.filteredDepartments = [...newFilteredDepartments]; 
+        console.log('过滤后的部门数据:', this.filteredDepartments);
       }
     },
      getCurrentUser() {
@@ -200,6 +281,7 @@ export default {
     } else {
       console.warn('未找到当前用户信息');
       this.currentUser = null;
+
     }
   },
     goToContacts() {
@@ -217,7 +299,11 @@ export default {
   viewEmployee(employee) {
     // 查看员工详情
     console.log("查看员工:", employee);
+    this.selectedEmployee = employee;
   },
+  closeEmployeeDetail() {
+  this.selectedEmployee = null;
+},
 
   
   openEditModal() {
@@ -230,29 +316,40 @@ export default {
   },
   
   async updateUserInfo() {
+    const token = sessionStorage.getItem('token');
     try {
+       
       // 调用后端更新接口
       const response = await axios.post('http://localhost:8082/update', {
         emp_id: this.currentUser.emp_id,
         phone: this.currentUser.phone,
         email: this.currentUser.email
-      });
+      },
+     {
+  headers: {
+    Authorization: `Bearer ${token}`}},);
       
       if (response.data.code === 1) {
         // 更新成功
-        alert('信息更新成功');
+         ElMessage.success('更新成功');
         this.closeEditModal();
         
         // 可选：重新获取用户信息以确保数据最新
         this.getCurrentUser();
       } else {
-        alert('信息更新失败');
+        ElMessage.success('更新失败');
       }
     } catch (error) {
       console.error('更新用户信息失败:', error);
-      alert('信息更新失败');
+      ElMessage.success('更新信息失败');
     }
-  }
+  },
+  toggle(deptName) {
+      const dept = this.filteredDepartments.find(d => d.name === deptName);
+      if (dept) {
+        dept.isOpen = !dept.isOpen;
+      }
+    },
 }
 
 
@@ -272,7 +369,7 @@ export default {
 }
 
 .header-options button {
-  background-color: #757575; /* 灰色按钮 */
+  background-color: #1976D2; /* 灰色按钮 */
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -285,7 +382,7 @@ export default {
 }
 
 .employee-list button {
-  background-color: #757575; /* 灰色按钮 */
+  background-color: #2196F3; /* 灰色按钮 */
   color: white;
   border: none;
   padding: 0.3rem 0.6rem;
@@ -577,5 +674,113 @@ export default {
 
 .cancel-btn {
   background-color: #ccc;
+}
+/* 员工信息弹窗 */
+.employee-detail-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.employee-detail-modal .modal-content {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+  animation: fadeIn 0.3s ease;
+}
+
+.employee-detail-row {
+  display: flex;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.detail-label {
+  font-weight: bold;
+  color: #333;
+  min-width: 80px;
+}
+
+.detail-value {
+  color: #555;
+  flex: 1;
+  padding-left: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.close-btn {
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  font-size: 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background-color: #1976D2;
+  transform: translateY(-2px);
+}
+
+.close-btn::before {
+  content: "\1F5D9"; /* 叉图标 */
+  margin-right: 0.5rem;
+  font-size: 1.2rem;
+}
+.search-bar {
+  margin-bottom: 1.5rem; /* 适当增加底部间距 */
+  padding: 0.8rem 1.2rem; /* 增加上下内边距，让搜索框更饱满 */
+  background: #fff; /* 设置白色背景 */
+  border-radius: 2rem; /* 设置较大圆角，让搜索框呈胶囊形状 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 添加柔和阴影，增强立体感 */
+  display: flex; /* 使用 flex 布局 */
+  align-items: center; /* 垂直居中内容 */
+  transition: box-shadow 0.3s ease; /* 添加阴影过渡动画 */
+}
+
+.search-bar:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); /* 悬停时增强阴影效果 */
+}
+
+.search-bar .el-input__inner {
+  border: none; /* 移除 Element Plus 输入框默认边框 */
+  outline: none; /* 移除聚焦时的轮廓线 */
+  font-size: 1rem; /* 设置字体大小 */
+  color: #333; /* 设置字体颜色 */
+  flex: 1; /* 让输入框占满剩余空间 */
+}
+
+.search-bar .el-input__inner::placeholder {
+  color: #999; /* 设置占位符颜色 */
+}
+
+.search-bar .el-input__prefix {
+  margin-right: 0.6rem; /* 调整前缀图标右侧间距 */
+}
+
+.search-bar .el-input__prefix .el-icon {
+  color: #666; /* 设置前缀图标颜色 */
+  font-size: 1.2rem; /* 设置图标大小 */
 }
 </style>

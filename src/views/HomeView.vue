@@ -147,7 +147,159 @@
           <!-- 管理员视图 -->
           <h3>管理员模式</h3>
           <p>当前为管理员视角，可管理用户和权限。</p>
-          <!-- 后续可拓展管理员功能 -->
+          <div class="admin-actions">
+            <button @click="showAddDepartmentModal = true">新增部门</button>
+            <button @click="showAddEmployeeModal = true">新增员工</button>
+          </div>
+
+          <!-- 部门列表 -->
+          <div class="department-list">
+            <h4>部门列表</h4>
+            <ul>
+              <li v-for="dept in departments" :key="dept.name">
+                <span>{{ dept.name }} (主管: {{  getDepartmentManager(dept.name) || '无' }})</span>
+                <div class="dept-actions">
+                  <button @click="editDepartment(dept)">编辑</button>
+                  <button @click="deleteDepartment(dept.name)">删除</button>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- 员工列表 -->
+          <div class="employee-list">
+            <h4>员工列表</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>工号</th>
+                  <th>姓名</th>
+                  <th>部门</th>
+                  <th>职位</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="emp in allEmployees" :key="emp.emp_id">
+                  <td>{{ emp.emp_id }}</td>
+                  <td>{{ emp.name }}</td>
+                  <td>{{ emp.department }}</td>
+                  <td>{{ emp.position }}</td>
+                  <td>
+                    <button @click="editEmployee(emp)">编辑</button>
+                    <button @click="deleteEmployee(emp.emp_id)">删除</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 新增部门模态框 -->
+          <div v-if="showAddDepartmentModal" class="modal">
+            <div class="modal-content">
+              <h3>新增部门</h3>
+              <div class="edit-field">
+                <label>部门名称：</label>
+                <input v-model="newDepartment.name" type="text" placeholder="请输入部门名称">
+              </div>
+              <div class="edit-field">
+                <label>部门主管工号：</label>
+                <input v-model="newDepartment.manager" type="text" placeholder="请输入主管工号">
+              </div>
+              <div class="modal-actions">
+                <button @click="addDepartment" class="save-btn">保存</button>
+                <button @click="showAddDepartmentModal = false" class="cancel-btn">取消</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 编辑部门模态框 -->
+          <div v-if="showEditDepartmentModal" class="modal">
+            <div class="modal-content">
+              <h3>编辑部门</h3>
+              <div class="edit-field">
+                <label>部门名称：</label>
+                <input v-model="editingDepartment.name" type="text">
+              </div>
+              <div class="edit-field">
+                <label>部门主管工号：</label>
+                <input v-model="editingDepartment.manager" type="text">
+              </div>
+              <div class="modal-actions">
+                <button @click="updateDepartment" class="save-btn">保存</button>
+                <button @click="showEditDepartmentModal = false" class="cancel-btn">取消</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 新增员工模态框 -->
+          <div v-if="showAddEmployeeModal" class="modal">
+            <div class="modal-content">
+              <h3>新增员工</h3>
+              <div class="edit-field">
+                <label>工号：</label>
+                <input v-model="newEmployee.emp_id" type="text" placeholder="请输入工号">
+              </div>
+              <div class="edit-field">
+                <label>姓名：</label>
+                <input v-model="newEmployee.name" type="text" placeholder="请输入姓名">
+              </div>
+              <div class="edit-field">
+                <label>部门：</label>
+                <select v-model="newEmployee.department_id" class="position-select">
+                  <option v-for="dept in departments" :key="dept.name" :value="dept.name">{{ dept.name }}</option>
+                </select>
+              </div>
+             <div class="edit-field">
+               <label>职位：</label>
+               <select v-model="newEmployee.position" class="position-select">
+                  <option value="普通员工">普通员工</option>
+                  <option value="部门总管">部门总管</option>
+               </select>
+             </div>
+              <div class="edit-field">
+                <label>密码：</label>
+                <input v-model="newEmployee.password" type="password" placeholder="密码">
+              </div>
+              <div class="modal-actions">
+                <button @click="addEmployee" class="save-btn">保存</button>
+                <button @click="showAddEmployeeModal = false" class="cancel-btn">取消</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 编辑员工模态框 -->
+          <div v-if="showEditEmployeeModal" class="modal">
+            <div class="modal-content">
+              <h3>编辑员工</h3>
+              <div class="edit-field">
+                <label>工号：</label>
+                <input v-model="editingEmployee.emp_id" type="text" disabled>
+              </div>
+              <div class="edit-field">
+                <label>姓名：</label>
+                <input v-model="editingEmployee.name" type="text">
+              </div>
+              <div class="edit-field">
+                <label>部门：</label>
+                <select v-model="editingEmployee.department_id" class="position-select">
+                  <option v-for="dept in departments" :key="dept.name" :value="dept.name">{{ dept.name }}</option>
+                </select>
+              </div>
+              <div class="edit-field">
+                <label>职位：</label>
+                <input v-model="editingEmployee.position" type="text">
+              </div>
+              <div class="edit-field">
+                <label>新密码：</label>
+                <input v-model="editingEmployee.password" type="password" placeholder="不填则使用原密码">
+              </div>
+              <div class="modal-actions">
+                <button @click="updateEmployee" class="save-btn">保存</button>
+                <button @click="showEditEmployeeModal = false" class="cancel-btn">取消</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </transition>
@@ -159,20 +311,49 @@
 
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
+import CryptoJS from 'crypto-js';
 export default {
   name: 'HomeView',
   data() {
     return {
+      
       emp_id: '',
       departments: [],
+      password: '',
       currentUser: null, // 用于保存当前登录用户的信息
       allEmployees: [] ,// 存储所有员工数据
        currentView: 'contacts' ,// 默认显示通讯录
        showEditModal: false ,// 控制模态框显示
        selectedEmployee: null, // 新增：用于存储选中的员工信息
        searchKeyword: '', // 搜索关键词
-        filteredDepartments: [] // 过滤后的部门数据
-       
+        filteredDepartments: [] ,// 过滤后的部门数据
+        showAddDepartmentModal: false,
+      showEditDepartmentModal: false,
+      showAddEmployeeModal: false,
+      showEditEmployeeModal: false,
+      newDepartment: {
+        name: '',
+        supervisor_id: ''
+      },
+      editingDepartment: {
+        name: '',
+        supervisor_id: ''
+      },
+      newEmployee: {
+        emp_id: '',
+        name: '',
+        department_id: '',
+        position: '',
+        password: ''
+      },
+      editingEmployee: {
+        emp_id: '',
+        name: '',
+        department_id: '',
+        position: '',
+        password: ''
+      },
+      originalPassword: ''
     };
   },
   mounted() {
@@ -183,7 +364,8 @@ export default {
   });
   },
   methods: {
- 
+ encryptPassword(password) {
+    return CryptoJS.SHA256(password).toString();}, // 使用 SHA-256 加密
     async fetchEmployees() {
       const token = sessionStorage.getItem('token');
       try {
@@ -221,6 +403,7 @@ export default {
   phone: emp.phone || '未填写'    
 
     }));
+ processedData.sort((a, b) => parseInt(a.emp_id) - parseInt(b.emp_id));
 
     this.allEmployees = processedData;
     this.groupByDepartment(processedData);
@@ -292,10 +475,7 @@ export default {
     // 跳转到个人信息页面
     this.currentView = 'profile';
   },
-  enterAdminMode() {
-    // 进入管理员模式
-    this.currentView = 'admin';
-  },
+
   viewEmployee(employee) {
     // 查看员工详情
     console.log("查看员工:", employee);
@@ -350,8 +530,197 @@ export default {
         dept.isOpen = !dept.isOpen;
       }
     },
-}
 
+enterAdminMode() {
+      // 进入管理员模式
+      this.currentView = 'admin';
+      // 重新获取员工和部门数据
+      this.fetchEmployees();
+    },
+    editDepartment(dept) {
+      this.editingDepartment = { ...dept };
+      this.showEditDepartmentModal = true;
+    },
+    async addDepartment() {
+      const token = sessionStorage.getItem('token');
+      try {
+        const response = await axios.post('http://localhost:8082/addDepartment', this.newDepartment, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (response.data.code === 1) {
+          ElMessage.success('新增部门成功');
+          this.showAddDepartmentModal = false;
+          this.newDepartment = {
+            name: '',
+            supervisor_id: ''
+          };
+          // 重新获取员工和部门数据
+          this.fetchEmployees();
+        } else {
+          ElMessage.error('新增部门失败: ' + response.data.msg);
+        }
+      } catch (error) {
+        console.error('新增部门失败:', error);
+        ElMessage.error('网络错误，请稍后再试');
+      }
+    },
+    async updateDepartment() {
+      const token = sessionStorage.getItem('token');
+      
+
+      try {
+        const response = await axios.post('http://localhost:8082/updateDepartment', this.editingDepartment, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (response.data.code === 1) {
+          ElMessage.success('更新部门信息成功');
+          this.showEditDepartmentModal = false;
+          // 重新获取员工和部门数据
+          this.fetchEmployees();
+        } else {
+          ElMessage.error('更新部门信息失败: ' + response.data.msg);
+        }
+      } catch (error) {
+        console.error('更新部门信息失败:', error);
+        ElMessage.error('网络错误，请稍后再试');
+      }
+    },
+    async deleteDepartment(deptName) {
+      const token = sessionStorage.getItem('token');
+      // 检查部门下是否有员工
+      const hasEmployees = this.allEmployees.some(emp => emp.department === deptName);
+      if (hasEmployees) {
+        ElMessage.warning('该部门下存在员工，无法删除');
+        return;
+      }
+      if (confirm('确定要删除该部门吗？')) {
+        try {
+          const response = await axios.post('http://localhost:8082/deleteDepartment', { deptName }, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          if (response.data.code === 1) {
+            ElMessage.success('删除部门成功');
+            // 重新获取员工和部门数据
+            this.fetchEmployees();
+          } else {
+            ElMessage.error('删除部门失败: ' + response.data.msg);
+          }
+        } catch (error) {
+          console.error('删除部门失败:', error);
+          ElMessage.error('网络错误，请稍后再试');
+        }
+      }
+    },
+   
+    async addEmployee() {
+      const token = sessionStorage.getItem('token');
+    
+      try {
+        const encryptedPassword = this.encryptPassword(this.newEmployee.password);
+        const payload = {
+      emp_id: this.newEmployee.emp_id,
+      name: this.newEmployee.name,
+      department_id: this.newEmployee.department_id,
+      position: this.newEmployee.position,
+      password: encryptedPassword // 使用加密后的密码
+    };
+        const response = await axios.post('http://localhost:8082/addEmployee', payload, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (response.data.code === 1) {
+          ElMessage.success('新增员工成功');
+          this.showAddEmployeeModal = false;
+          this.newEmployee = {
+            emp_id: '',
+            name: '',
+            department_id: '',
+            position: '',
+            password: ''
+          };
+          // 重新获取员工和部门数据
+          this.fetchEmployees();
+        } else {
+          ElMessage.error('新增员工失败: ' + response.data.msg);
+        }
+      } catch (error) {
+        console.error('新增员工失败:', error);
+        ElMessage.error('添加失败，请检查工号是否重复');
+      }
+    },
+     editEmployee(emp) {
+this.editingEmployee = { ...emp, password: '' };
+      this.showEditEmployeeModal = true;
+    },
+    async updateEmployee() {
+      const token = sessionStorage.getItem('token');
+   const newPassword = this.editingEmployee.password;
+   const encryptedPassword =  this.encryptPassword(newPassword) ;
+ 
+  const payload = {
+    emp_id: this.editingEmployee.emp_id,
+    name: this.editingEmployee.name,
+    department_id: this.editingEmployee.department_id,
+    position: this.editingEmployee.position,
+    password: encryptedPassword  // 发送加密后的密码
+  };
+      try {
+        const response = await axios.post('http://localhost:8082/updateEmployee', payload, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (response.data.code === 1) {
+          ElMessage.success('更新员工信息成功');
+          this.showEditEmployeeModal = false;
+          // 重新获取员工和部门数据
+          this.fetchEmployees();
+        } else {
+          ElMessage.error('更新员工信息失败: ' + response.data.msg);
+        }
+      } catch (error) {
+        console.error('更新员工信息失败:', error);
+        ElMessage.error('网络错误，请稍后再试');
+      }
+    },
+    async deleteEmployee(emp_id) {
+      const token = sessionStorage.getItem('token');
+      if (confirm('确定要删除该员工吗？')) {
+        try {
+          const response = await axios.post('http://localhost:8082/deleteEmployee', { emp_id }, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          if (response.data.code === 1) {
+            ElMessage.success('删除员工成功');
+            // 重新获取员工和部门数据
+            this.fetchEmployees();
+          } else {
+            ElMessage.error('删除员工失败: ' + response.data.msg);
+          }
+        } catch (error) {
+          console.error('删除员工失败:', error);
+          ElMessage.error('网络错误，请稍后再试');
+        }
+      }},
+
+  getDepartmentManager(deptName) {
+    console.log('当前查找的部门名称:', deptName);
+      const manager = this.allEmployees.find(emp => 
+        emp.department === deptName && emp.position === '部门总管'
+      );
+      return manager ? manager.name : null;
+    },
+  
+    }
 
   
 };
@@ -748,6 +1117,7 @@ export default {
   margin-right: 0.5rem;
   font-size: 1.2rem;
 }
+/* 搜索栏样式*/
 .search-bar {
   margin-bottom: 1.5rem; /* 适当增加底部间距 */
   padding: 0.8rem 1.2rem; /* 增加上下内边距，让搜索框更饱满 */
@@ -783,4 +1153,112 @@ export default {
   color: #666; /* 设置前缀图标颜色 */
   font-size: 1.2rem; /* 设置图标大小 */
 }
+
+/*guanli*/
+
+
+.admin-view .admin-actions {
+  margin-bottom: 1rem;
+}
+
+.admin-view .admin-actions button {
+  margin-right: 0.5rem;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.admin-view .admin-actions button:hover {
+  background-color: #1976D2;
+}
+
+.admin-view .department-list,
+.admin-view .employee-list {
+  margin-bottom: 2rem;
+}
+
+.admin-view .department-list ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.admin-view .department-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.admin-view .department-list li:last-child {
+  border-bottom: none;
+}
+
+.admin-view .dept-actions button,
+.admin-view .employee-list button {
+  margin-left: 0.5rem;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.admin-view .dept-actions button:hover,
+.admin-view .employee-list button:hover {
+  background-color: #1976D2;
+}
+
+.admin-view table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-view th,
+.admin-view td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.admin-view th {
+  background-color: #f2f2f2;
+}
+.admin-view .dept-actions button:nth-child(2) {
+  background-color: #f44336; /* 红色背景 */
+}
+
+.admin-view .dept-actions button:nth-child(2):hover {
+  background-color: #d32f2f; /* 悬停时更深的红色 */
+}
+
+/* 员工操作中的删除按钮 */
+.admin-view .employee-list button:nth-child(2) {
+  background-color: #f44336; /* 红色背景 */
+}
+
+.admin-view .employee-list button:nth-child(2):hover {
+  background-color: #d32f2f; /* 悬停时更深的红色 */
+}
+
+/* 员工详情弹窗中的删除按钮（如果有） */
+.employee-detail-modal .modal-actions button:nth-child(2) {
+  background-color: #f44336; /* 红色背景 */
+}
+
+.employee-detail-modal .modal-actions button:nth-child(2):hover {
+  background-color: #d32f2f; /* 悬停时更深的红色 */
+}
+.position-select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
 </style>
