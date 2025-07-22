@@ -146,7 +146,7 @@
         <div v-show="currentView === 'admin'" class="view admin-view admin-card">
           <!-- 管理员视图 -->
           <h3>管理员模式</h3>
-          <p>当前为管理员视角，可管理用户和权限。</p>
+          <p>当前为管理员视角，可管理用户和部门~</p>
           <div class="admin-actions">
             <button @click="showAddDepartmentModal = true">新增部门</button>
             <button @click="showAddEmployeeModal = true">新增员工</button>
@@ -174,13 +174,22 @@
                 <tr>
                   <th>工号</th>
                   <th>姓名</th>
-                  <th>部门</th>
-                  <th>职位</th>
+                  <th>部门
+                    <select v-model="selectedDepartmentFilter" class="filter-select">
+        <option v-for="dept in departmentsFilterOptions" :key="dept" :value="dept">{{ dept }}</option>
+      </select>
+                  </th>
+
+                  <th>职位
+                    <select v-model="selectedPositionFilter" class="filter-select">
+        <option v-for="pos in positionsFilterOptions" :key="pos" :value="pos">{{ pos }}</option>
+      </select>
+                  </th>
                   <th>操作</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="emp in allEmployees" :key="emp.emp_id">
+                <tr v-for="emp in paginatedEmployees" :key="emp.emp_id">
                   <td>{{ emp.emp_id }}</td>
                   <td>{{ emp.name }}</td>
                   <td>{{ emp.department }}</td>
@@ -192,6 +201,13 @@
                 </tr>
               </tbody>
             </table>
+                 <div class="pagination">
+                     <button @click="currentPage = 1" :disabled="currentPage === 1">首页</button>
+                      <button @click="currentPage--" :disabled="currentPage === 1">上一页</button>
+                      <span>第 {{ currentPage }} 页 / 共 {{ totalPages }} 页</span>
+                  <button @click="currentPage++" :disabled="currentPage === totalPages">下一页</button>
+                <button @click="currentPage = totalPages" :disabled="currentPage === totalPages">尾页</button>
+                </div>
           </div>
 
           <!-- 新增部门模态框 -->
@@ -356,7 +372,12 @@ export default {
         position: '',
         password: ''
       },
-      originalPassword: ''
+      originalPassword: '',
+        currentPage: 1,         // 当前页码
+    itemsPerPage: 10,       // 每页显示条数
+    selectedDepartmentFilter: '全部', // 当前选择的部门筛选
+    selectedPositionFilter: '全部',   // 当前选择的职位筛选
+    positionsFilterOptions: ['全部', '普通员工', '部门总管']
     };
   },
   mounted() {
@@ -366,6 +387,39 @@ export default {
     this.filteredDepartments = this.departments; // 初始化过滤数据
   });
   },
+  computed: {
+    filteredEmployees() {
+    return this.allEmployees.filter(emp => {
+      const deptMatch = this.selectedDepartmentFilter === '全部' || emp.department === this.selectedDepartmentFilter;
+      const positionMatch = this.selectedPositionFilter === '全部' || emp.position === this.selectedPositionFilter;
+      return deptMatch && positionMatch;
+    });
+  },
+  paginatedEmployees() {
+    const start = (this.currentPage - 1) * this.itemsPerPage;
+    const end = start + this.itemsPerPage;
+    return this.filteredEmployees.slice(start, end);
+  },
+  totalPages() {
+    return Math.ceil(this.filteredEmployees.length / this.itemsPerPage);
+  },
+
+    
+  departmentsFilterOptions() {
+    const depts = this.departments.map(d => d.name);
+    return ['全部', ...depts];
+  
+}
+  },
+  watch: {
+
+  selectedDepartmentFilter() {
+    this.currentPage = 1;
+  },
+  selectedPositionFilter() {
+    this.currentPage = 1;
+  }
+},
   methods: {
  encryptPassword(password) {
     return CryptoJS.SHA256(password).toString();}, // 使用 SHA-256 加密
@@ -1234,6 +1288,53 @@ this.editingEmployee = { ...emp, password: '' };
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 1rem;
+}
+
+.pagination {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pagination button {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination button:hover {
+  background-color: #e0e0e0;
+}
+
+.pagination button:disabled {
+  background-color: #ddd;
+  cursor: not-allowed;
+}
+.filter-select {
+  margin-left: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.filter-select:hover {
+  border-color: #888;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #2196F3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
 }
 
 </style>
