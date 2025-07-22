@@ -160,7 +160,7 @@
                 <span>{{ dept.name }} (主管: {{  getDepartmentManager(dept.name) || '无' }})</span>
                 <div class="dept-actions">
                   <button @click="editDepartment(dept)">编辑</button>
-                  <button @click="deleteDepartment(dept.name)">删除</button>
+                
                 </div>
               </li>
             </ul>
@@ -204,7 +204,7 @@
               </div>
               <div class="edit-field">
                 <label>部门主管工号：</label>
-                <input v-model="newDepartment.manager" type="text" placeholder="请输入主管工号">
+                <input v-model="newDepartment.supervisor_id" type="text" placeholder="请输入主管工号">
               </div>
               <div class="modal-actions">
                 <button @click="addDepartment" class="save-btn">保存</button>
@@ -223,7 +223,7 @@
               </div>
               <div class="edit-field">
                 <label>部门主管工号：</label>
-                <input v-model="editingDepartment.manager" type="text">
+                <input v-model="editingDepartment.supervisor_id" type="text">
               </div>
               <div class="modal-actions">
                 <button @click="updateDepartment" class="save-btn">保存</button>
@@ -247,6 +247,7 @@
               <div class="edit-field">
                 <label>部门：</label>
                 <select v-model="newEmployee.department_id" class="position-select">
+                  <option value="待分配">待分配</option>
                   <option v-for="dept in departments" :key="dept.name" :value="dept.name">{{ dept.name }}</option>
                 </select>
               </div>
@@ -254,7 +255,6 @@
                <label>职位：</label>
                <select v-model="newEmployee.position" class="position-select">
                   <option value="普通员工">普通员工</option>
-                  <option value="部门总管">部门总管</option>
                </select>
              </div>
               <div class="edit-field">
@@ -288,7 +288,10 @@
               </div>
               <div class="edit-field">
                 <label>职位：</label>
-                <input v-model="editingEmployee.position" type="text">
+               <select v-model="editingEmployee.position" class="position-select">
+                    <option value="普通员工">普通员工</option>
+                    <option value="部门主管">部门主管</option>
+                </select>
               </div>
               <div class="edit-field">
                 <label>新密码：</label>
@@ -587,34 +590,6 @@ enterAdminMode() {
       } catch (error) {
         console.error('更新部门信息失败:', error);
         ElMessage.error('网络错误，请稍后再试');
-      }
-    },
-    async deleteDepartment(deptName) {
-      const token = sessionStorage.getItem('token');
-      // 检查部门下是否有员工
-      const hasEmployees = this.allEmployees.some(emp => emp.department === deptName);
-      if (hasEmployees) {
-        ElMessage.warning('该部门下存在员工，无法删除');
-        return;
-      }
-      if (confirm('确定要删除该部门吗？')) {
-        try {
-          const response = await axios.post('http://localhost:8082/deleteDepartment', { deptName }, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
-          if (response.data.code === 1) {
-            ElMessage.success('删除部门成功');
-            // 重新获取员工和部门数据
-            this.fetchEmployees();
-          } else {
-            ElMessage.error('删除部门失败: ' + response.data.msg);
-          }
-        } catch (error) {
-          console.error('删除部门失败:', error);
-          ElMessage.error('网络错误，请稍后再试');
-        }
       }
     },
    
