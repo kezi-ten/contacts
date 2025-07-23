@@ -331,6 +331,7 @@
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import CryptoJS from 'crypto-js';
+import { generateSignatureWithTimestamp } from '@/utils/signature';
 export default {
   name: 'HomeView',
   data() {
@@ -554,17 +555,22 @@ export default {
   
   async updateUserInfo() {
     const token = sessionStorage.getItem('token');
+      const payload = {
+    emp_id: this.currentUser.emp_id,
+    phone: this.currentUser.phone,
+    email: this.currentUser.email
+  };
+
+     const { signature, timestamp } = generateSignatureWithTimestamp(payload);
     try {
-       
       // 调用后端更新接口
-      const response = await axios.post('http://localhost:8082/update', {
-        emp_id: this.currentUser.emp_id,
-        phone: this.currentUser.phone,
-        email: this.currentUser.email
-      },
-     {
-  headers: {
-    Authorization: `Bearer ${token}`}},);
+      const response = await axios.post('http://localhost:8082/update', payload,
+  {headers: {
+    Authorization: `Bearer ${token}`,
+    'X-Signature': signature,
+        'X-Timestamp': timestamp
+  
+  }},);
       
       if (response.data.code === 1) {
         // 更新成功
@@ -600,10 +606,17 @@ enterAdminMode() {
     },
     async addDepartment() {
       const token = sessionStorage.getItem('token');
+      const payload = {
+    name: this.newDepartment.name,
+    supervisor_id: this.newDepartment.supervisor_id
+  };
+       const { signature, timestamp } = generateSignatureWithTimestamp(payload);
       try {
-        const response = await axios.post('http://localhost:8082/addDepartment', this.newDepartment, {
+        const response = await axios.post('http://localhost:8082/addDepartment', payload, {
           headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
+            'X-Signature': signature,
+        'X-Timestamp': timestamp
           }
         });
         if (response.data.code === 1) {
@@ -659,9 +672,12 @@ enterAdminMode() {
       position: this.newEmployee.position,
       password: encryptedPassword // 使用加密后的密码
     };
+    const { signature, timestamp } = generateSignatureWithTimestamp(payload);
         const response = await axios.post('http://localhost:8082/addEmployee', payload, {
           headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
+             'X-Signature': signature,
+        'X-Timestamp': timestamp
           }
         });
         if (response.data.code === 1) {
@@ -700,10 +716,13 @@ this.editingEmployee = { ...emp, password: '' };
     position: this.editingEmployee.position,
     password: encryptedPassword  // 发送加密后的密码
   };
+   const { signature, timestamp } = generateSignatureWithTimestamp(payload);
       try {
         const response = await axios.post('http://localhost:8082/updateEmployee', payload, {
           headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
+            'X-Signature': signature,
+        'X-Timestamp': timestamp
           }
         });
         if (response.data.code === 1) {
@@ -721,11 +740,15 @@ this.editingEmployee = { ...emp, password: '' };
     },
     async deleteEmployee(emp_id) {
       const token = sessionStorage.getItem('token');
+      const payload = { emp_id };
+  const { signature, timestamp } = generateSignatureWithTimestamp(payload);
       if (confirm('确定要删除该员工吗？')) {
         try {
-          const response = await axios.post('http://localhost:8082/deleteEmployee', { emp_id }, {
+          const response = await axios.post('http://localhost:8082/deleteEmployee', payload, {
             headers: {
-              Authorization: `Bearer ${token}`
+              Authorization: `Bearer ${token}`,
+               'X-Signature': signature,
+        'X-Timestamp': timestamp
             }
           });
           if (response.data.code === 1) {

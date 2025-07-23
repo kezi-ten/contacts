@@ -24,6 +24,7 @@
 import { ElMessage } from 'element-plus';
 import axios from 'axios'; // 引入 axios
 import CryptoJS from 'crypto-js'; // 引入 crypto-js
+import { generateSignatureWithTimestamp } from '@/utils/signature';
 export default {
   data() {
     return {
@@ -49,14 +50,19 @@ export default {
       }
     },
     async login() { // 改为异步方法
+      const payload = {
+    emp_id: this.emp_id,
+    password: CryptoJS.SHA256(this.password).toString()
+  };
+  const { signature, timestamp } = generateSignatureWithTimestamp(payload);
+
       try {
-      const encryptedPassword = CryptoJS.SHA256(this.password).toString();
-const response = await axios.post('http://localhost:8082/login', {
-          emp_id: this.emp_id,
-          password: encryptedPassword}, {
+const response = await axios.post('http://localhost:8082/login', payload, {
   headers: {
     'X-Captcha-Key': this.captchaId,
     'X-Captcha': this.captcha,
+     'X-Signature': signature,
+     'X-Timestamp': timestamp
   
   }
         }
@@ -77,9 +83,10 @@ const response = await axios.post('http://localhost:8082/login', {
         console.error('请求失败:', error);
         ElMessage.warning('网络错误，请稍后再试');
       }
-    }
-  }
-};
+    },
+    
+
+}};
 </script>
 
 <style scoped>
