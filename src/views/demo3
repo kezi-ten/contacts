@@ -30,15 +30,15 @@ export default {
       emp_id: '',
       password: '',
       captcha: '',
-    captchaImage: '',
-      captchaId: ''
+    /* captchaImage: '',
+      captchaId: ''*/
     };
   },
   mounted() {
     this.getCaptcha();
   }, 
   methods: {
-   async getCaptcha() {
+   /*async getCaptcha() {
       try {
         const response = await axios.get('http://localhost:8082/captcha');
         this.captchaId = response.data.captchaId;
@@ -47,7 +47,7 @@ export default {
         console.error('获取验证码失败:', error);
         ElMessage.warning('获取验证码失败，请稍后再试');
       }
-    },
+    },*/
     async login() { // 改为异步方法
       try {
       const encryptedPassword = CryptoJS.SHA256(this.password).toString();
