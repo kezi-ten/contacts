@@ -237,10 +237,6 @@
                 <label>部门名称：</label>
                 <input v-model="editingDepartment.name" type="text">
               </div>
-              <div class="edit-field">
-                <label>部门主管工号：</label>
-                <input v-model="editingDepartment.supervisor_id" type="text">
-              </div>
               <div class="modal-actions">
                 <button @click="updateDepartment" class="save-btn">保存</button>
                 <button @click="showEditDepartmentModal = false" class="cancel-btn">取消</button>
@@ -600,10 +596,7 @@ enterAdminMode() {
       // 重新获取员工和部门数据
       this.fetchEmployees();
     },
-    editDepartment(dept) {
-      this.editingDepartment = { ...dept };
-      this.showEditDepartmentModal = true;
-    },
+    
     async addDepartment() {
       const token = sessionStorage.getItem('token');
       const payload = {
@@ -636,29 +629,46 @@ enterAdminMode() {
         ElMessage.error('网络错误，请稍后再试');
       }
     },
+    editDepartment(dept) {
+  
+  this.editingDepartment = { 
+    ...dept,
+    originalName: dept.name  
+  };
+  this.showEditDepartmentModal = true;
+},
     async updateDepartment() {
       const token = sessionStorage.getItem('token');
-      
+       const oldName = this.editingDepartment.originalName; 
+  const newName = this.editingDepartment.name;       
+       const payload = {
+    oldName,  // 原部门名
+    newName   // 新部门名
+  };
+  const { signature, timestamp } = generateSignatureWithTimestamp(payload);
+
 
       try {
-        const response = await axios.post('http://localhost:8082/updateDepartment', this.editingDepartment, {
+        const response = await axios.post('http://localhost:8082/updateDepartment', payload, {
           headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
+             'X-Signature': signature,
+        'X-Timestamp': timestamp
           }
         });
-        if (response.data.code === 1) {
-          ElMessage.success('更新部门信息成功');
-          this.showEditDepartmentModal = false;
-          // 重新获取员工和部门数据
-          this.fetchEmployees();
-        } else {
-          ElMessage.error('更新部门信息失败: ' + response.data.msg);
-        }
-      } catch (error) {
-        console.error('更新部门信息失败:', error);
-        ElMessage.error('网络错误，请稍后再试');
-      }
-    },
+       if (response.data.code === 1) {
+      const { oldName, newName } = response.data.data;
+      ElMessage.success(`部门名称从 "${oldName}" 更新为 "${newName}"`);
+      this.showEditDepartmentModal = false;
+      this.fetchEmployees(); // 重新获取数据
+    } else {
+      ElMessage.error('更新失败: ' + response.data.msg);
+    }
+  } catch (error) {
+    console.error('更新部门信息失败:', error);
+    ElMessage.error('网络错误，请稍后再试');
+  }
+},
    
     async addEmployee() {
       const token = sessionStorage.getItem('token');
