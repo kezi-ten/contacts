@@ -17,10 +17,15 @@
         <el-button native-type="submit" type="primary" style="width: 100%">登录</el-button>
       </el-form>
     </div>
+     <img
+      :src="dynamicImage" 
+      alt="动态图片" 
+      class="dynamic-image">
   </div>
 </template>
 
 <script>
+import dynamicImage from '@/assets/0b32a0b601da4f8bada9422817f2e521.gif';
 import { ElMessage } from 'element-plus';
 import axios from 'axios'; // 引入 axios
 import CryptoJS from 'crypto-js'; // 引入 crypto-js
@@ -28,11 +33,13 @@ import { generateSignatureWithTimestamp } from '@/utils/signature';
 export default {
   data() {
     return {
+
       emp_id: '',
       password: '',
       captcha: '',
     captchaImage: '',
-      captchaId: ''
+      captchaId: '',
+      dynamicImage: dynamicImage
     };
   },
   mounted() {

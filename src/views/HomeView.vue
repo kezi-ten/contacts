@@ -12,7 +12,11 @@
         <button @click="enterAdminMode">管理员模式</button>
       </div>
     </div>
-
+    <img 
+      :src="dynamicImage2" 
+      alt="动态图片" 
+      class="dynamic-image"
+    >
     <!-- 页面内容过渡动画 -->
     <transition name="fade">
       <div>
@@ -157,7 +161,7 @@
             <h4>部门列表</h4>
             <ul>
               <li v-for="dept in departments" :key="dept.name">
-                <span>{{ dept.name }} (主管: {{  getDepartmentManager(dept.name) || '无' }})</span>
+                <span>{{ dept.name }} (总管: {{  getDepartmentManager(dept.name) || '无' }})</span>
                 <div class="dept-actions">
                   <button @click="editDepartment(dept)">编辑</button>
                 
@@ -219,8 +223,8 @@
                 <input v-model="newDepartment.name" type="text" placeholder="请输入部门名称">
               </div>
               <div class="edit-field">
-                <label>部门主管工号：</label>
-                <input v-model="newDepartment.supervisor_id" type="text" placeholder="请输入主管工号">
+                <label>部门总管工号：</label>
+                <input v-model="newDepartment.supervisor_id" type="text" placeholder="请输入总管工号">
               </div>
               <div class="modal-actions">
                 <button @click="addDepartment" class="save-btn">保存</button>
@@ -316,6 +320,11 @@
             </div>
           </div>
         </div>
+        <img 
+      :src="dynamicImage" 
+      alt="动态图片" 
+      class="dynamic-image"
+    >
       </div>
     </transition>
 
@@ -323,16 +332,20 @@
 </template>
 
 <script>
-
+import dynamicImage from '@/assets/4471dcf746b24b738e0c5d7561dd2839.gif';
+import dynamicImage2 from '@/assets/c33ae2fae8c44fb589950998abfb5b36.gif';
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import CryptoJS from 'crypto-js';
 import { generateSignatureWithTimestamp } from '@/utils/signature';
+
+
 export default {
   name: 'HomeView',
   data() {
     return {
-      
+      dynamicImage2: dynamicImage2,
+      dynamicImage: dynamicImage,
       emp_id: '',
       departments: [],
       password: '',
@@ -389,6 +402,7 @@ export default {
     this.getCurrentUser();
     this.filteredDepartments = this.departments; // 初始化过滤数据
   });
+
   },
   computed: {
     filteredEmployees() {
@@ -424,6 +438,7 @@ export default {
   }
 },
   methods: {
+
  encryptPassword(password) {
     return CryptoJS.SHA256(password).toString();}, // 使用 SHA-256 加密
     async fetchEmployees() {
@@ -1409,5 +1424,10 @@ this.originalPassword = emp.password;
   border-color: #2196F3;
   box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
 }
-
+.dynamic-image {
+  display: block;
+  margin: 20px auto 0; /* 顶部留 20px 间距，水平居中 */
+  max-width: 100%; /* 图片最大宽度不超过容器 */
+  height: auto; /* 保持图片比例 */
+}
 </style>
