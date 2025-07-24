@@ -454,7 +454,8 @@ export default {
       department: emp.department_id|| '未知部门',
       position: emp.position|| '未知职位',
       email: emp.email || '未填写',  
-  phone: emp.phone || '未填写'    
+  phone: emp.phone || '未填写',
+  password: emp.password || ''    
 
     }));
  processedData.sort((a, b) => parseInt(a.emp_id) - parseInt(b.emp_id));
@@ -711,13 +712,18 @@ enterAdminMode() {
       }
     },
      editEmployee(emp) {
+      
 this.editingEmployee = { ...emp, password: '' };
+this.originalPassword = emp.password;
       this.showEditEmployeeModal = true;
     },
     async updateEmployee() {
       const token = sessionStorage.getItem('token');
-   const newPassword = this.editingEmployee.password;
-   const encryptedPassword =  this.encryptPassword(newPassword) ;
+   const newPassword = this.editingEmployee.password||this.originalPassword;
+   console.log(this.originalPassword);
+   const encryptedPassword =  this.editingEmployee.password
+    ? this.encryptPassword(newPassword)
+    : newPassword;
  
   const payload = {
     emp_id: this.editingEmployee.emp_id,
