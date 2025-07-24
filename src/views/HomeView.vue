@@ -302,7 +302,7 @@
                 <label>职位：</label>
                <select v-model="editingEmployee.position" class="position-select">
                     <option value="普通员工">普通员工</option>
-                    <option value="部门主管">部门主管</option>
+                    <option value="部门总管">部门总管</option>
                 </select>
               </div>
               <div class="edit-field">
@@ -347,6 +347,7 @@ export default {
       showEditDepartmentModal: false,
       showAddEmployeeModal: false,
       showEditEmployeeModal: false,
+      admins: [],
       newDepartment: {
         name: '',
         supervisor_id: ''
@@ -377,8 +378,13 @@ export default {
     positionsFilterOptions: ['全部', '普通员工', '部门总管']
     };
   },
-  mounted() {
+  async mounted() {
     this.emp_id = localStorage.getItem('emp_id') || '游客';
+     // 获取员工数据和管理员列表
+  await Promise.all([
+    this.fetchEmployees(),
+    this.fetchAdmins()
+  ]);
     this.fetchEmployees().then(() => {
     this.getCurrentUser();
     this.filteredDepartments = this.departments; // 初始化过滤数据
@@ -592,6 +598,11 @@ export default {
     },
 
 enterAdminMode() {
+  if (!this.isCurrentUserAdmin()) {
+    ElMessage.error('您没有管理员权限');
+    return;
+  }
+  ElMessage.success('欢迎管理员~');
       // 进入管理员模式
       this.currentView = 'admin';
       // 重新获取员工和部门数据
@@ -787,6 +798,29 @@ this.originalPassword = emp.password;
       );
       return manager ? manager.name : null;
     },
+    async fetchAdmins() {
+    const token = sessionStorage.getItem('token');
+    try {
+      const response = await axios.post('http://localhost:8082/admins', {}, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data.code === 1) {
+        this.admins = response.data.data || [];
+      } else {
+        console.error('获取管理员列表失败:', response.data.msg);
+        this.admins = [];
+      }
+    } catch (error) {
+      console.error('请求管理员列表失败:', error);
+      this.admins = [];
+    }
+  },
+  isCurrentUserAdmin() {
+    return this.admins.some(admin => admin.emp_id === this.emp_id);
+  }
   
     }
 
