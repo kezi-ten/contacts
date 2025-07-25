@@ -159,6 +159,17 @@
           <!-- 部门列表 -->
           <div class="department-list">
             <h4>部门列表</h4>
+          <div class="admin-actions">
+      <!-- 为按钮添加鼠标事件 -->
+      <button 
+        @mouseenter="showChart = true" 
+        @mouseleave="showChart = false"
+      >人员总览</button>
+    </div>
+    <!-- 图表容器 -->
+    <div v-if="showChart" class="chart-container">
+      <div ref="chart" style="width: 400px; height: 300px;"></div>
+    </div>
             <ul>
               <li v-for="dept in departments" :key="dept.name">
                 <span>{{ dept.name }} (总管: {{  getDepartmentManager(dept.name) || '无' }})</span>
@@ -338,6 +349,8 @@ import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import CryptoJS from 'crypto-js';
 import { generateSignatureWithTimestamp } from '@/utils/signature';
+import * as echarts from 'echarts';
+
 
 
 export default {
@@ -388,7 +401,9 @@ export default {
     itemsPerPage: 10,       // 每页显示条数
     selectedDepartmentFilter: '全部', // 当前选择的部门筛选
     selectedPositionFilter: '全部',   // 当前选择的职位筛选
-    positionsFilterOptions: ['全部', '普通员工', '部门总管']
+    positionsFilterOptions: ['全部', '普通员工', '部门总管'],
+    showChart: false, // 控制图表显示
+      chartInstance: null // 存储 ECharts 实例
     };
   },
   async mounted() {
@@ -430,13 +445,30 @@ export default {
 }
   },
   watch: {
-
+showChart(newVal) {
+      if (newVal) {
+        this.$nextTick(() => {
+          this.initChart();
+        });
+      } else if (this.chartInstance) {
+        this.chartInstance.dispose();
+        this.chartInstance = null;
+      }
+    },
   selectedDepartmentFilter() {
     this.currentPage = 1;
   },
   selectedPositionFilter() {
     this.currentPage = 1;
-  }
+  },
+  departments: {
+      handler() {
+        if (this.chartInstance) {
+          this.initChart();
+        }
+      },
+      deep: true
+    }
 },
   methods: {
 
@@ -852,10 +884,33 @@ async verifyAdminPermission(){
     return false;
   }
 },
+initChart() {
+      const chartDom = this.$refs.chart;
+      this.chartInstance = echarts.init(chartDom);
 
+      const xData = this.departments.map(dept => dept.name);
+      const yData = this.departments.map(dept => dept.employees.length);
 
+      const option = {
+        xAxis: {
+          type: 'category',
+          data: xData
+        },
+        yAxis: {
+          type: 'value'
+        },
+        series: [
+          {
+            data: yData,
+            type: 'bar'
+          }
+        ]
+      };
+
+      this.chartInstance.setOption(option);
     }
-  
+  },
+
 };
 </script>
 
@@ -1445,5 +1500,24 @@ async verifyAdminPermission(){
   margin: 20px auto 0; /* 顶部留 20px 间距，水平居中 */
   max-width: 100%; /* 图片最大宽度不超过容器 */
   height: auto; /* 保持图片比例 */
+}
+.chart-container {
+  position: fixed; /* 使用 fixed 定位，相对于浏览器窗口定位 */
+  left: 50%; /* 左边缘位于窗口水平中心 */
+  top: 50%; /* 上边缘位于窗口垂直中心 */
+  transform: translate(-50%, -50%); /* 将容器自身向左和向上移动自身宽高的一半，实现完全居中 */
+  z-index: 100;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 400px; 
+  height: 300px;
+}
+
+.chart-container > div {
+  width: 100%;
+  height: 100%;
 }
 </style>
