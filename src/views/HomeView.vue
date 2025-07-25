@@ -360,7 +360,7 @@ export default {
       showEditDepartmentModal: false,
       showAddEmployeeModal: false,
       showEditEmployeeModal: false,
-      admins: [],
+      isAdmin: false,
       newDepartment: {
         name: '',
         supervisor_id: ''
@@ -396,7 +396,7 @@ export default {
      // 获取员工数据和管理员列表
   await Promise.all([
     this.fetchEmployees(),
-    this.fetchAdmins()
+    
   ]);
     this.fetchEmployees().then(() => {
     this.getCurrentUser();
@@ -612,17 +612,31 @@ export default {
       }
     },
 
-enterAdminMode() {
-  if (!this.isCurrentUserAdmin()) {
-    ElMessage.error('您没有管理员权限');
-    return;
-  }
-  ElMessage.success('欢迎管理员~');
-      // 进入管理员模式
+async enterAdminMode() {
+  const token = sessionStorage.getItem('token');
+  
+  try {
+    // 先向后端验证权限
+    const response = await axios.post('http://localhost:8082/checkAdmin', {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    if (response.data.code === 1 && response.data.data==true) {
+      this.isAdmin = true;
+      ElMessage.success('欢迎管理员~');
       this.currentView = 'admin';
-      // 重新获取员工和部门数据
       this.fetchEmployees();
-    },
+    } else {
+      this.isAdmin = false;
+      ElMessage.error('您没有管理员权限');
+    }
+  } catch (error) {
+    console.error('权限验证失败:', error);
+    ElMessage.error('权限验证失败，请重新登录');
+  }
+},
     
     async addDepartment() {
       const token = sessionStorage.getItem('token');
@@ -813,30 +827,32 @@ this.originalPassword = emp.password;
       );
       return manager ? manager.name : null;
     },
-    async fetchAdmins() {
-    const token = sessionStorage.getItem('token');
-    try {
-      const response = await axios.post('http://localhost:8082/admins', {}, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      if (response.data.code === 1) {
-        this.admins = response.data.data || [];
-      } else {
-        console.error('获取管理员列表失败:', response.data.msg);
-        this.admins = [];
+
+    /*
+   async checkAdminStatus() {
+  const token = sessionStorage.getItem('token');
+  try {
+    const response = await axios.post('http://localhost:8082/checkAdmin', {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
-    } catch (error) {
-      console.error('请求管理员列表失败:', error);
-      this.admins = [];
+    });
+    
+    if (response.data.code === 1 && response.data.data==true) {
+      this.isAdmin = true;
+    } else {
+      console.error('获取管理员状态失败:', response.data.msg);
+      this.isAdmin = false;
     }
-  },
-  isCurrentUserAdmin() {
-    return this.admins.some(admin => admin.emp_id === this.emp_id);
+  } catch (error) {
+    console.error('请求管理员状态失败:', error);
+    this.isAdmin = false;
   }
-  
+},
+ isCurrentUserAdmin() {
+  return this.isAdmin;
+}
+  */
     }
 
   
