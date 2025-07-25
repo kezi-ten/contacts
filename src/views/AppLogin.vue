@@ -4,7 +4,7 @@
       <h2>用户登录</h2>
       <el-form @submit.prevent="login" label-position="top">
         <el-form-item label="用户名">
-          <el-input v-model="emp_id" placeholder="请输入用户名" />
+          <el-input v-model="emp_id" placeholder="请输入用户" />
         </el-form-item>
 
         <el-form-item label="密码">
