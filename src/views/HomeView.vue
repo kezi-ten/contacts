@@ -396,6 +396,7 @@ export default {
      // 获取员工数据和管理员列表
   await Promise.all([
     this.fetchEmployees(),
+    this.getCurrentUser()
     
   ]);
     this.fetchEmployees().then(() => {
@@ -795,9 +796,12 @@ this.originalPassword = emp.password;
       }
     },
     async deleteEmployee(emp_id) {
+      const hasPermission = await this.verifyAdminPermission();
+  if (!hasPermission) return;
       const token = sessionStorage.getItem('token');
       const payload = { emp_id };
   const { signature, timestamp } = generateSignatureWithTimestamp(payload);
+  
       if (confirm('确定要删除该员工吗？')) {
         try {
           const response = await axios.post('http://localhost:8082/deleteEmployee', payload, {
@@ -828,8 +832,7 @@ this.originalPassword = emp.password;
       return manager ? manager.name : null;
     },
 
-    /*
-   async checkAdminStatus() {
+async verifyAdminPermission(){
   const token = sessionStorage.getItem('token');
   try {
     const response = await axios.post('http://localhost:8082/checkAdmin', {}, {
@@ -839,22 +842,19 @@ this.originalPassword = emp.password;
     });
     
     if (response.data.code === 1 && response.data.data==true) {
-      this.isAdmin = true;
+      return true;
     } else {
-      console.error('获取管理员状态失败:', response.data.msg);
-      this.isAdmin = false;
+      ElMessage.error('您没有管理员权限');
+      return false;
     }
   } catch (error) {
-    console.error('请求管理员状态失败:', error);
-    this.isAdmin = false;
+     ElMessage.error('权限验证失败，请重新登录');
+    return false;
   }
 },
- isCurrentUserAdmin() {
-  return this.isAdmin;
-}
-  */
-    }
 
+
+    }
   
 };
 </script>
