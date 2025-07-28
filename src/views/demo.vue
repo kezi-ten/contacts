@@ -12,7 +12,11 @@
         <button @click="enterAdminMode">管理员模式</button>
       </div>
     </div>
-
+    <img 
+      :src="dynamicImage2" 
+      alt="动态图片" 
+      class="dynamic-image"
+    >
     <!-- 页面内容过渡动画 -->
     <transition name="fade">
       <div>
@@ -146,7 +150,7 @@
         <div v-show="currentView === 'admin'" class="view admin-view admin-card">
           <!-- 管理员视图 -->
           <h3>管理员模式</h3>
-          <p>当前为管理员视角，可管理用户和权限。</p>
+          <p>当前为管理员视角，可管理用户和部门~</p>
           <div class="admin-actions">
             <button @click="showAddDepartmentModal = true">新增部门</button>
             <button @click="showAddEmployeeModal = true">新增员工</button>
@@ -155,9 +159,20 @@
           <!-- 部门列表 -->
           <div class="department-list">
             <h4>部门列表</h4>
+          <div class="admin-actions">
+      <!-- 为按钮添加鼠标事件 -->
+      <button 
+        @mouseenter="showChart = true" 
+        @mouseleave="showChart = false"
+      >人员总览</button>
+    </div>
+    <!-- 图表容器 -->
+    <div v-if="showChart" class="chart-container">
+      <div ref="chart" style="width: 400px; height: 300px;"></div>
+    </div>
             <ul>
               <li v-for="dept in departments" :key="dept.name">
-                <span>{{ dept.name }} (主管: {{  getDepartmentManager(dept.name) || '无' }})</span>
+                <span>{{ dept.name }} (总管: {{  getDepartmentManager(dept.name) || '无' }})</span>
                 <div class="dept-actions">
                   <button @click="editDepartment(dept)">编辑</button>
                 
@@ -174,13 +189,22 @@
                 <tr>
                   <th>工号</th>
                   <th>姓名</th>
-                  <th>部门</th>
-                  <th>职位</th>
+                  <th>部门
+                    <select v-model="selectedDepartmentFilter" class="filter-select">
+        <option v-for="dept in departmentsFilterOptions" :key="dept" :value="dept">{{ dept }}</option>
+      </select>
+                  </th>
+
+                  <th>职位
+                    <select v-model="selectedPositionFilter" class="filter-select">
+        <option v-for="pos in positionsFilterOptions" :key="pos" :value="pos">{{ pos }}</option>
+      </select>
+                  </th>
                   <th>操作</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="emp in allEmployees" :key="emp.emp_id">
+                <tr v-for="emp in paginatedEmployees" :key="emp.emp_id">
                   <td>{{ emp.emp_id }}</td>
                   <td>{{ emp.name }}</td>
                   <td>{{ emp.department }}</td>
@@ -192,6 +216,13 @@
                 </tr>
               </tbody>
             </table>
+                 <div class="pagination">
+                     <button @click="currentPage = 1" :disabled="currentPage === 1">首页</button>
+                      <button @click="currentPage--" :disabled="currentPage === 1">上一页</button>
+                      <span>第 {{ currentPage }} 页 / 共 {{ totalPages }} 页</span>
+                  <button @click="currentPage++" :disabled="currentPage === totalPages">下一页</button>
+                <button @click="currentPage = totalPages" :disabled="currentPage === totalPages">尾页</button>
+                </div>
           </div>
 
           <!-- 新增部门模态框 -->
@@ -203,8 +234,8 @@
                 <input v-model="newDepartment.name" type="text" placeholder="请输入部门名称">
               </div>
               <div class="edit-field">
-                <label>部门主管工号：</label>
-                <input v-model="newDepartment.supervisor_id" type="text" placeholder="请输入主管工号">
+                <label>部门总管工号：</label>
+                <input v-model="newDepartment.supervisor_id" type="text" placeholder="请输入总管工号">
               </div>
               <div class="modal-actions">
                 <button @click="addDepartment" class="save-btn">保存</button>
@@ -220,10 +251,6 @@
               <div class="edit-field">
                 <label>部门名称：</label>
                 <input v-model="editingDepartment.name" type="text">
-              </div>
-              <div class="edit-field">
-                <label>部门主管工号：</label>
-                <input v-model="editingDepartment.supervisor_id" type="text">
               </div>
               <div class="modal-actions">
                 <button @click="updateDepartment" class="save-btn">保存</button>
@@ -290,7 +317,7 @@
                 <label>职位：</label>
                <select v-model="editingEmployee.position" class="position-select">
                     <option value="普通员工">普通员工</option>
-                    <option value="部门主管">部门主管</option>
+                    <option value="部门总管">部门总管</option>
                 </select>
               </div>
               <div class="edit-field">
@@ -304,6 +331,11 @@
             </div>
           </div>
         </div>
+        <img 
+      :src="dynamicImage" 
+      alt="动态图片" 
+      class="dynamic-image"
+    >
       </div>
     </transition>
 
@@ -311,15 +343,22 @@
 </template>
 
 <script>
-
+import dynamicImage from '@/assets/4471dcf746b24b738e0c5d7561dd2839.gif';
+import dynamicImage2 from '@/assets/c33ae2fae8c44fb589950998abfb5b36.gif';
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import CryptoJS from 'crypto-js';
+import { generateSignatureWithTimestamp } from '@/utils/signature';
+import * as echarts from 'echarts';
+
+
+
 export default {
   name: 'HomeView',
   data() {
     return {
-      
+      dynamicImage2: dynamicImage2,
+      dynamicImage: dynamicImage,
       emp_id: '',
       departments: [],
       password: '',
@@ -334,6 +373,7 @@ export default {
       showEditDepartmentModal: false,
       showAddEmployeeModal: false,
       showEditEmployeeModal: false,
+      isAdmin: false,
       newDepartment: {
         name: '',
         supervisor_id: ''
@@ -356,17 +396,82 @@ export default {
         position: '',
         password: ''
       },
-      originalPassword: ''
+      originalPassword: '',
+        currentPage: 1,         // 当前页码
+    itemsPerPage: 10,       // 每页显示条数
+    selectedDepartmentFilter: '全部', // 当前选择的部门筛选
+    selectedPositionFilter: '全部',   // 当前选择的职位筛选
+    positionsFilterOptions: ['全部', '普通员工', '部门总管'],
+    showChart: false, // 控制图表显示
+      chartInstance: null // 存储 ECharts 实例
     };
   },
-  mounted() {
+  async mounted() {
     this.emp_id = localStorage.getItem('emp_id') || '游客';
+     // 获取员工数据和管理员列表
+  await Promise.all([
+    this.fetchEmployees(),
+    this.getCurrentUser()
+    
+  ]);
     this.fetchEmployees().then(() => {
     this.getCurrentUser();
     this.filteredDepartments = this.departments; // 初始化过滤数据
   });
+
   },
+  computed: {
+    filteredEmployees() {
+    return this.allEmployees.filter(emp => {
+      const deptMatch = this.selectedDepartmentFilter === '全部' || emp.department === this.selectedDepartmentFilter;
+      const positionMatch = this.selectedPositionFilter === '全部' || emp.position === this.selectedPositionFilter;
+      return deptMatch && positionMatch;
+    });
+  },
+  paginatedEmployees() {
+    const start = (this.currentPage - 1) * this.itemsPerPage;
+    const end = start + this.itemsPerPage;
+    return this.filteredEmployees.slice(start, end);
+  },
+  totalPages() {
+    return Math.ceil(this.filteredEmployees.length / this.itemsPerPage);
+  },
+
+    
+  departmentsFilterOptions() {
+    const depts = this.departments.map(d => d.name);
+    return ['全部', ...depts];
+  
+}
+  },
+  watch: {
+showChart(newVal) {
+      if (newVal) {
+        this.$nextTick(() => {
+          this.initChart();
+        });
+      } else if (this.chartInstance) {
+        this.chartInstance.dispose();
+        this.chartInstance = null;
+      }
+    },
+  selectedDepartmentFilter() {
+    this.currentPage = 1;
+  },
+  selectedPositionFilter() {
+    this.currentPage = 1;
+  },
+  departments: {
+      handler() {
+        if (this.chartInstance) {
+          this.initChart();
+        }
+      },
+      deep: true
+    }
+},
   methods: {
+
  encryptPassword(password) {
     return CryptoJS.SHA256(password).toString();}, // 使用 SHA-256 加密
     async fetchEmployees() {
@@ -403,7 +508,8 @@ export default {
       department: emp.department_id|| '未知部门',
       position: emp.position|| '未知职位',
       email: emp.email || '未填写',  
-  phone: emp.phone || '未填写'    
+  phone: emp.phone || '未填写',
+  password: emp.password || ''    
 
     }));
  processedData.sort((a, b) => parseInt(a.emp_id) - parseInt(b.emp_id));
@@ -500,17 +606,22 @@ export default {
   
   async updateUserInfo() {
     const token = sessionStorage.getItem('token');
+      const payload = {
+    emp_id: this.currentUser.emp_id,
+    phone: this.currentUser.phone,
+    email: this.currentUser.email
+  };
+
+     const { signature, timestamp } = generateSignatureWithTimestamp(payload);
     try {
-       
       // 调用后端更新接口
-      const response = await axios.post('http://localhost:8082/update', {
-        emp_id: this.currentUser.emp_id,
-        phone: this.currentUser.phone,
-        email: this.currentUser.email
-      },
-     {
-  headers: {
-    Authorization: `Bearer ${token}`}},);
+      const response = await axios.post('http://localhost:8082/update', payload,
+  {headers: {
+    Authorization: `Bearer ${token}`,
+    'X-Signature': signature,
+        'X-Timestamp': timestamp
+  
+  }},);
       
       if (response.data.code === 1) {
         // 更新成功
@@ -534,22 +645,45 @@ export default {
       }
     },
 
-enterAdminMode() {
-      // 进入管理员模式
+async enterAdminMode() {
+  const token = sessionStorage.getItem('token');
+  
+  try {
+    // 先向后端验证权限
+    const response = await axios.post('http://localhost:8082/checkAdmin', {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    if (response.data.code === 1 && response.data.data==true) {
+      this.isAdmin = true;
+      ElMessage.success('欢迎管理员~');
       this.currentView = 'admin';
-      // 重新获取员工和部门数据
       this.fetchEmployees();
-    },
-    editDepartment(dept) {
-      this.editingDepartment = { ...dept };
-      this.showEditDepartmentModal = true;
-    },
+    } else {
+      this.isAdmin = false;
+      ElMessage.error('您没有管理员权限');
+    }
+  } catch (error) {
+    console.error('权限验证失败:', error);
+    ElMessage.error('权限验证失败，请重新登录');
+  }
+},
+    
     async addDepartment() {
       const token = sessionStorage.getItem('token');
+      const payload = {
+    name: this.newDepartment.name,
+    supervisor_id: this.newDepartment.supervisor_id
+  };
+       const { signature, timestamp } = generateSignatureWithTimestamp(payload);
       try {
-        const response = await axios.post('http://localhost:8082/addDepartment', this.newDepartment, {
+        const response = await axios.post('http://localhost:8082/addDepartment', payload, {
           headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
+            'X-Signature': signature,
+        'X-Timestamp': timestamp
           }
         });
         if (response.data.code === 1) {
@@ -569,29 +703,46 @@ enterAdminMode() {
         ElMessage.error('网络错误，请稍后再试');
       }
     },
+    editDepartment(dept) {
+  
+  this.editingDepartment = { 
+    ...dept,
+    originalName: dept.name  
+  };
+  this.showEditDepartmentModal = true;
+},
     async updateDepartment() {
       const token = sessionStorage.getItem('token');
-      
+       const oldName = this.editingDepartment.originalName; 
+  const newName = this.editingDepartment.name;       
+       const payload = {
+    oldName,  // 原部门名
+    newName   // 新部门名
+  };
+  const { signature, timestamp } = generateSignatureWithTimestamp(payload);
+
 
       try {
-        const response = await axios.post('http://localhost:8082/updateDepartment', this.editingDepartment, {
+        const response = await axios.post('http://localhost:8082/updateDepartment', payload, {
           headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
+             'X-Signature': signature,
+        'X-Timestamp': timestamp
           }
         });
-        if (response.data.code === 1) {
-          ElMessage.success('更新部门信息成功');
-          this.showEditDepartmentModal = false;
-          // 重新获取员工和部门数据
-          this.fetchEmployees();
-        } else {
-          ElMessage.error('更新部门信息失败: ' + response.data.msg);
-        }
-      } catch (error) {
-        console.error('更新部门信息失败:', error);
-        ElMessage.error('网络错误，请稍后再试');
-      }
-    },
+       if (response.data.code === 1) {
+      const { oldName, newName } = response.data.data;
+      ElMessage.success(`部门名称从 "${oldName}" 更新为 "${newName}"`);
+      this.showEditDepartmentModal = false;
+      this.fetchEmployees(); // 重新获取数据
+    } else {
+      ElMessage.error('更新失败: ' + response.data.msg);
+    }
+  } catch (error) {
+    console.error('更新部门信息失败:', error);
+    ElMessage.error('网络错误，请稍后再试');
+  }
+},
    
     async addEmployee() {
       const token = sessionStorage.getItem('token');
@@ -605,9 +756,12 @@ enterAdminMode() {
       position: this.newEmployee.position,
       password: encryptedPassword // 使用加密后的密码
     };
+    const { signature, timestamp } = generateSignatureWithTimestamp(payload);
         const response = await axios.post('http://localhost:8082/addEmployee', payload, {
           headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
+             'X-Signature': signature,
+        'X-Timestamp': timestamp
           }
         });
         if (response.data.code === 1) {
@@ -631,13 +785,18 @@ enterAdminMode() {
       }
     },
      editEmployee(emp) {
+      
 this.editingEmployee = { ...emp, password: '' };
+this.originalPassword = emp.password;
       this.showEditEmployeeModal = true;
     },
     async updateEmployee() {
       const token = sessionStorage.getItem('token');
-   const newPassword = this.editingEmployee.password;
-   const encryptedPassword =  this.encryptPassword(newPassword) ;
+   const newPassword = this.editingEmployee.password||this.originalPassword;
+   console.log(this.originalPassword);
+   const encryptedPassword =  this.editingEmployee.password
+    ? this.encryptPassword(newPassword)
+    : newPassword;
  
   const payload = {
     emp_id: this.editingEmployee.emp_id,
@@ -646,10 +805,13 @@ this.editingEmployee = { ...emp, password: '' };
     position: this.editingEmployee.position,
     password: encryptedPassword  // 发送加密后的密码
   };
+   const { signature, timestamp } = generateSignatureWithTimestamp(payload);
       try {
         const response = await axios.post('http://localhost:8082/updateEmployee', payload, {
           headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
+            'X-Signature': signature,
+        'X-Timestamp': timestamp
           }
         });
         if (response.data.code === 1) {
@@ -666,12 +828,19 @@ this.editingEmployee = { ...emp, password: '' };
       }
     },
     async deleteEmployee(emp_id) {
+      const hasPermission = await this.verifyAdminPermission();
+  if (!hasPermission) return;
       const token = sessionStorage.getItem('token');
+      const payload = { emp_id };
+  const { signature, timestamp } = generateSignatureWithTimestamp(payload);
+  
       if (confirm('确定要删除该员工吗？')) {
         try {
-          const response = await axios.post('http://localhost:8082/deleteEmployee', { emp_id }, {
+          const response = await axios.post('http://localhost:8082/deleteEmployee', payload, {
             headers: {
-              Authorization: `Bearer ${token}`
+              Authorization: `Bearer ${token}`,
+               'X-Signature': signature,
+        'X-Timestamp': timestamp
             }
           });
           if (response.data.code === 1) {
@@ -694,10 +863,54 @@ this.editingEmployee = { ...emp, password: '' };
       );
       return manager ? manager.name : null;
     },
-  
-    }
 
-  
+async verifyAdminPermission(){
+  const token = sessionStorage.getItem('token');
+  try {
+    const response = await axios.post('http://localhost:8082/checkAdmin', {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    if (response.data.code === 1 && response.data.data==true) {
+      return true;
+    } else {
+      ElMessage.error('您没有管理员权限');
+      return false;
+    }
+  } catch (error) {
+     ElMessage.error('权限验证失败，请重新登录');
+    return false;
+  }
+},
+initChart() {
+      const chartDom = this.$refs.chart;
+      this.chartInstance = echarts.init(chartDom);
+
+      const xData = this.departments.map(dept => dept.name);
+      const yData = this.departments.map(dept => dept.employees.length);
+
+      const option = {
+        xAxis: {
+          type: 'category',
+          data: xData
+        },
+        yAxis: {
+          type: 'value'
+        },
+        series: [
+          {
+            data: yData,
+            type: 'bar'
+          }
+        ]
+      };
+
+      this.chartInstance.setOption(option);
+    }
+  },
+
 };
 </script>
 
@@ -1236,4 +1449,75 @@ this.editingEmployee = { ...emp, password: '' };
   font-size: 1rem;
 }
 
+.pagination {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pagination button {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination button:hover {
+  background-color: #e0e0e0;
+}
+
+.pagination button:disabled {
+  background-color: #ddd;
+  cursor: not-allowed;
+}
+.filter-select {
+  margin-left: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.filter-select:hover {
+  border-color: #888;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #2196F3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+.dynamic-image {
+  display: block;
+  margin: 20px auto 0; /* 顶部留 20px 间距，水平居中 */
+  max-width: 100%; /* 图片最大宽度不超过容器 */
+  height: auto; /* 保持图片比例 */
+}
+.chart-container {
+  position: fixed; /* 使用 fixed 定位，相对于浏览器窗口定位 */
+  left: 50%; /* 左边缘位于窗口水平中心 */
+  top: 50%; /* 上边缘位于窗口垂直中心 */
+  transform: translate(-50%, -50%); /* 将容器自身向左和向上移动自身宽高的一半，实现完全居中 */
+  z-index: 100;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 400px; 
+  height: 300px;
+}
+
+.chart-container > div {
+  width: 100%;
+  height: 100%;
+}
 </style>

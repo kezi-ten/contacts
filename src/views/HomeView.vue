@@ -154,6 +154,9 @@
           <div class="admin-actions">
             <button @click="showAddDepartmentModal = true">新增部门</button>
             <button @click="showAddEmployeeModal = true">新增员工</button>
+            <!-- 新增批量导入按钮 -->
+        <button @click="handleBatchImport">批量导入</button>
+
           </div>
 
           <!-- 部门列表 -->
@@ -908,6 +911,9 @@ initChart() {
       };
 
       this.chartInstance.setOption(option);
+    },
+    handleBatchImport() {
+      ElMessage.warning('功能暂未实现');
     }
   },
 
@@ -1520,4 +1526,7 @@ initChart() {
   width: 100%;
   height: 100%;
 }
+ .admin-actions button {
+    margin-right: 10px;
+  }
 </style>
